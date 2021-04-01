@@ -48,7 +48,7 @@ public:
                     };
                     col_defs.push_back(col_def);
                 } else {
-                    assert(0);
+                    throw InternalError("Unexpected field type");
                 }
             }
             SmManager::create_table(x->tab_name, col_defs);
@@ -87,7 +87,7 @@ public:
             }
             QlManager::select_from(sel_cols, x->tabs, conds);
         } else {
-            assert(0);
+            throw InternalError("Unexpected AST root");
         }
     }
 
@@ -122,7 +122,7 @@ private:
         } else if (auto str_lit = std::dynamic_pointer_cast<ast::StringLit>(sv_val)) {
             val.set_str(str_lit->val);
         } else {
-            assert(0);
+            throw InternalError("Unexpected sv value type");
         }
         return val;
     }

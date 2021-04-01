@@ -1,3 +1,5 @@
+#undef NDEBUG
+
 #include "sm.h"
 #include <string>
 #include <cassert>

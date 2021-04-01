@@ -20,7 +20,7 @@ static int ix_compare(InputBuffer a, InputBuffer b, ColType type, int col_len) {
         case TYPE_STRING:
             return memcmp(a, b, col_len);
         default:
-            assert(0);
+            throw InternalError("Unexpected data type");
     }
 }
 

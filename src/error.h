@@ -14,6 +14,11 @@ public:
     }
 };
 
+class InternalError : public RedBaseError {
+public:
+    InternalError(const std::string &msg) : RedBaseError(msg) {}
+};
+
 // PF errors
 class UnixError : public RedBaseError {
 public:

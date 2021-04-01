@@ -1,3 +1,4 @@
+#undef NDEBUG
 #define private public
 
 #include "ix.h"

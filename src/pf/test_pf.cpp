@@ -1,3 +1,5 @@
+#undef NDEBUG
+
 #define private public
 
 #include "pf.h"

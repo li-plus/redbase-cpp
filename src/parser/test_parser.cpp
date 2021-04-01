@@ -1,3 +1,5 @@
+#undef NDEBUG
+
 #include "parser.h"
 #include <cassert>
 

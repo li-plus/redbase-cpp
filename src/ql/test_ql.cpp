@@ -1,3 +1,5 @@
+#undef NDEBUG
+
 #include "ql.h"
 #include "interp.h"
 

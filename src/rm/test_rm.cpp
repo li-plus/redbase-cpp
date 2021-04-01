@@ -1,3 +1,5 @@
+#undef NDEBUG
+
 #include "rm.h"
 #include <cassert>
 #include <ctime>

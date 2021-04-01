@@ -106,7 +106,7 @@ public:
     }
 
     void feed(const std::map<TabCol, Value> &feed_dict) override {
-        assert(0);
+        throw InternalError("Cannot feed a projection node");
     }
 };
 
@@ -191,7 +191,7 @@ public:
                     } else if (cond.op == OP_GE) {
                         lower = ih->lower_bound(rhs_key);
                     } else {
-                        assert(0);
+                        throw InternalError("Unexpected op type");
                     }
                     break;  // TODO: maintain an interval
                 }
@@ -286,7 +286,7 @@ public:
         } else if (cond.op == OP_GE) {
             return cmp >= 0;
         } else {
-            assert(0);
+            throw InternalError("Unexpected op type");
         }
     }
 
