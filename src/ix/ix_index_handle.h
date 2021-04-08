@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ix_defs.h"
-#include <memory>
 
 static const bool binary_search = false;
 
@@ -143,7 +142,7 @@ struct IxNodeHandle {
     }
 };
 
-class IxIndexHandle : public std::enable_shared_from_this<IxIndexHandle> {
+class IxIndexHandle {
     friend class IxScan;
 
 public:

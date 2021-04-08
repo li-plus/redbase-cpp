@@ -7,8 +7,8 @@
 #include <fstream>
 
 DbMeta SmManager::db;
-std::map<std::string, std::shared_ptr<RmFileHandle>> SmManager::fhs;
-std::map<std::string, std::shared_ptr<IxIndexHandle>> SmManager::ihs;
+std::map<std::string, std::unique_ptr<RmFileHandle>> SmManager::fhs;
+std::map<std::string, std::unique_ptr<IxIndexHandle>> SmManager::ihs;
 
 bool SmManager::is_dir(const std::string &db_name) {
     struct stat st;
@@ -82,12 +82,12 @@ void SmManager::close_db() {
     db.tabs.clear();
     // Close all record files
     for (auto &entry: fhs) {
-        RmManager::close_file(entry.second);
+        RmManager::close_file(entry.second.get());
     }
     fhs.clear();
     // Close all index files
     for (auto &entry: ihs) {
-        IxManager::close_index(entry.second);
+        IxManager::close_index(entry.second.get());
     }
     ihs.clear();
     if (chdir("..") < 0) {
@@ -160,7 +160,7 @@ void SmManager::drop_table(const std::string &tab_name) {
     // Find table index in db meta
     TabMeta &tab = db.get_table(tab_name);
     // Close & destroy record file
-    RmManager::close_file(fhs.at(tab_name));
+    RmManager::close_file(fhs.at(tab_name).get());
     RmManager::destroy_file(tab_name);
     // Close & destroy index file
     for (auto &col: tab.cols) {
@@ -184,7 +184,7 @@ void SmManager::create_index(const std::string &tab_name, const std::string &col
     // Open index file
     auto ih = IxManager::open_index(tab_name, col_idx);
     // Get record file handle
-    auto fh = fhs.at(tab_name);
+    auto fh = fhs.at(tab_name).get();
     // Index all records into index
     for (RmScan rm_scan(fh); !rm_scan.is_end(); rm_scan.next()) {
         auto rec = fh->get_record(rm_scan.rid());
@@ -194,7 +194,7 @@ void SmManager::create_index(const std::string &tab_name, const std::string &col
     // Store index handle
     auto index_name = IxManager::get_index_name(tab_name, col_idx);
     assert(ihs.count(index_name) == 0);
-    ihs[index_name] = ih;
+    ihs[index_name] = std::move(ih);
     // Mark column index as created
     col->index = true;
 }
@@ -207,7 +207,7 @@ void SmManager::drop_index(const std::string &tab_name, const std::string &col_n
     }
     int col_idx = col - tab.cols.begin();
     auto index_name = IxManager::get_index_name(tab_name, col_idx);
-    IxManager::close_index(ihs.at(index_name));
+    IxManager::close_index(ihs.at(index_name).get());
     IxManager::destroy_index(tab_name, col_idx);
     ihs.erase(index_name);
     col->index = false;

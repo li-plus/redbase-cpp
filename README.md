@@ -2,7 +2,7 @@
 
 ![Demo](fig/demo.gif)
 
-A simple relational database based on [Stanford CS346 RedBase](https://web.stanford.edu/class/cs346/2015/redbase.html), implemented in elegant modern C++11.
+A simple relational database based on [Stanford CS346 RedBase](https://web.stanford.edu/class/cs346/2015/redbase.html), implemented in elegant modern C++14.
 
 ## Features
 

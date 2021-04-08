@@ -73,7 +73,7 @@ void QlManager::insert_into(const std::string &tab_name, std::vector<Value> valu
         throw InvalidValueCountError();
     }
     // Get record file handle
-    auto fh = SmManager::fhs.at(tab_name);
+    auto fh = SmManager::fhs.at(tab_name).get();
     // Make record buffer
     RmRecord rec(fh->hdr.record_size);
     for (size_t i = 0; i < values.size(); i++) {
@@ -91,7 +91,7 @@ void QlManager::insert_into(const std::string &tab_name, std::vector<Value> valu
     for (size_t i = 0; i < tab.cols.size(); i++) {
         auto &col = tab.cols[i];
         if (col.index) {
-            auto ih = SmManager::ihs.at(IxManager::get_index_name(tab_name, i));
+            auto ih = SmManager::ihs.at(IxManager::get_index_name(tab_name, i)).get();
             ih->insert_entry(rec.data + col.offset, rid);
         }
     }
@@ -108,12 +108,12 @@ void QlManager::delete_from(const std::string &tab_name, std::vector<Condition> 
         rids.push_back(table_scan.rid());
     }
     // Get record file
-    auto fh = SmManager::fhs.at(tab_name);
+    auto fh = SmManager::fhs.at(tab_name).get();
     // Get all index files
-    std::vector<std::shared_ptr<IxIndexHandle>> ihs(tab.cols.size());
+    std::vector<IxIndexHandle *> ihs(tab.cols.size(), nullptr);
     for (size_t col_i = 0; col_i < tab.cols.size(); col_i++) {
         if (tab.cols[col_i].index) {
-            ihs[col_i] = SmManager::ihs.at(IxManager::get_index_name(tab_name, col_i));
+            ihs[col_i] = SmManager::ihs.at(IxManager::get_index_name(tab_name, col_i)).get();
         }
     }
     // Delete each rid from record file and index file
@@ -151,15 +151,15 @@ void QlManager::update_set(const std::string &tab_name,
         rids.push_back(table_scan.rid());
     }
     // Get record file
-    auto fh = SmManager::fhs.at(tab_name);
+    auto fh = SmManager::fhs.at(tab_name).get();
     // Get all necessary index files
-    std::vector<std::shared_ptr<IxIndexHandle>> ihs(tab.cols.size());
+    std::vector<IxIndexHandle *> ihs(tab.cols.size(), nullptr);
     for (auto &set_clause: set_clauses) {
         auto lhs_col = tab.get_col(set_clause.lhs.col_name);
         if (lhs_col->index) {
             size_t lhs_col_idx = lhs_col - tab.cols.begin();
             if (ihs[lhs_col_idx] == nullptr) {
-                ihs[lhs_col_idx] = SmManager::ihs.at(IxManager::get_index_name(tab_name, lhs_col_idx));
+                ihs[lhs_col_idx] = SmManager::ihs.at(IxManager::get_index_name(tab_name, lhs_col_idx)).get();
             }
         }
     }
@@ -225,17 +225,17 @@ void QlManager::select_from(std::vector<TabCol> sel_cols,
     // Parse where clause
     conds = check_where_clause(tab_names, conds);
     // Scan table
-    std::vector<std::shared_ptr<QlNodeTable>> tab_nodes(tab_names.size());
+    std::vector<std::unique_ptr<QlNodeTable>> tab_nodes(tab_names.size());
     for (size_t i = 0; i < tab_names.size(); i++) {
         auto curr_conds = pop_conds(conds, {tab_names.begin(), tab_names.begin() + i + 1});
-        tab_nodes[i] = std::make_shared<QlNodeTable>(tab_names[i], curr_conds);
+        tab_nodes[i] = std::make_unique<QlNodeTable>(tab_names[i], curr_conds);
     }
     assert(conds.empty());
-    std::shared_ptr<QlNode> query_plan = tab_nodes.back();
+    std::unique_ptr<QlNode> query_plan = std::move(tab_nodes.back());
     for (size_t i = tab_names.size() - 2; i != (size_t) -1; i--) {
-        query_plan = std::make_shared<QlNodeJoin>(tab_nodes[i], query_plan);
+        query_plan = std::make_unique<QlNodeJoin>(std::move(tab_nodes[i]), std::move(query_plan));
     }
-    query_plan = std::make_shared<QlNodeProj>(query_plan, sel_cols);
+    query_plan = std::make_unique<QlNodeProj>(std::move(query_plan), sel_cols);
     // Column titles
     std::vector<std::string> captions;
     captions.reserve(sel_cols.size());

@@ -1,15 +1,14 @@
 #pragma once
 
 #include "rm_defs.h"
-#include <memory>
 
 class RmFileHandle;
 
 class RmScan : public RecScan {
-    std::shared_ptr<RmFileHandle> _fh;
+    const RmFileHandle *_fh;
     Rid _rid;
 public:
-    RmScan(std::shared_ptr<RmFileHandle> fh);
+    RmScan(const RmFileHandle *fh);
 
     void next() override;
 

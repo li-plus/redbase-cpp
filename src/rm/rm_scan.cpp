@@ -1,7 +1,7 @@
 #include "rm_scan.h"
 #include "rm_file_handle.h"
 
-RmScan::RmScan(std::shared_ptr<RmFileHandle> fh) : _fh(std::move(fh)) {
+RmScan::RmScan(const RmFileHandle *fh) : _fh(fh) {
     _rid = {.page_no = RM_FIRST_RECORD_PAGE, .slot_no = -1};
     next();
 }

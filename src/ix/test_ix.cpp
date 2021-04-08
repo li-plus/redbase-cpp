@@ -10,7 +10,7 @@
 #include <map>
 #include <iostream>
 
-void check_tree(const std::shared_ptr<IxIndexHandle> &ih, int root_page) {
+void check_tree(const IxIndexHandle *ih, int root_page) {
     IxNodeHandle node = ih->fetch_node(root_page);
     if (node.hdr->is_leaf) {
         return;
@@ -27,7 +27,7 @@ void check_tree(const std::shared_ptr<IxIndexHandle> &ih, int root_page) {
     }
 }
 
-void check_leaf(const std::shared_ptr<IxIndexHandle> &ih) {
+void check_leaf(const IxIndexHandle *ih) {
     // check leaf list
     int leaf_no = ih->hdr.first_leaf;
     while (leaf_no != IX_LEAF_HEADER_PAGE) {
@@ -41,7 +41,7 @@ void check_leaf(const std::shared_ptr<IxIndexHandle> &ih) {
     }
 }
 
-void check_equal(const std::shared_ptr<IxIndexHandle> &ih, const std::multimap<int, Rid> &mock) {
+void check_equal(const IxIndexHandle *ih, const std::multimap<int, Rid> &mock) {
     check_tree(ih, ih->hdr.root_page);
     check_leaf(ih);
     for (auto &entry: mock) {
@@ -108,13 +108,13 @@ void test_ix_insert_delete(int order, int round) {
         ih->insert_entry((InputBuffer) &rand_key, rand_val);
         mock.insert(std::make_pair(rand_key, rand_val));
         if (round % 500 == 0) {
-            IxManager::close_index(ih);
+            IxManager::close_index(ih.get());
             ih = IxManager::open_index(filename, index_no);
         }
     }
     std::cout << "Insert " << round << std::endl;
 //    print_btree(ih, ih.hdr.root_page, 0);
-    check_equal(ih, mock);
+    check_equal(ih.get(), mock);
     for (int i = 0; i < round; i++) {
         auto it = mock.begin();
         int key = it->first;
@@ -122,13 +122,13 @@ void test_ix_insert_delete(int order, int round) {
         ih->delete_entry((InputBuffer) &key, rid);
         mock.erase(it);
         if (round % 500 == 0) {
-            IxManager::close_index(ih);
+            IxManager::close_index(ih.get());
             ih = IxManager::open_index(filename, index_no);
         }
     }
     std::cout << "delete " << round << std::endl;
-    check_equal(ih, mock);
-    IxManager::close_index(ih);
+    check_equal(ih.get(), mock);
+    IxManager::close_index(ih.get());
     IxManager::destroy_index(filename, index_no);
 }
 
@@ -169,7 +169,7 @@ void test_ix(int order, int round) {
         }
         // Randomly re-open file
         if (round % 500 == 0) {
-            IxManager::close_index(ih);
+            IxManager::close_index(ih.get());
             ih = IxManager::open_index(filename, index_no);
         }
     }
@@ -186,12 +186,12 @@ void test_ix(int order, int round) {
         mock.erase(it);
         // Randomly re-open file
         if (round % 500 == 0) {
-            IxManager::close_index(ih);
+            IxManager::close_index(ih.get());
             ih = IxManager::open_index(filename, index_no);
         }
     }
-    check_equal(ih, mock);
-    IxManager::close_index(ih);
+    check_equal(ih.get(), mock);
+    IxManager::close_index(ih.get());
     IxManager::destroy_index(filename, index_no);
 }
 

@@ -18,7 +18,7 @@ public:
 
     virtual bool is_end() const = 0;
 
-    virtual std::shared_ptr<RmRecord> rec() const = 0;
+    virtual std::unique_ptr<RmRecord> rec() const = 0;
 
     virtual void feed(const std::map<TabCol, Value> &feed_dict) = 0;
 
@@ -32,7 +32,7 @@ public:
         return pos;
     }
 
-    static std::map<TabCol, Value> rec2dict(const std::vector<ColMeta> &cols, const std::shared_ptr<RmRecord> &rec) {
+    static std::map<TabCol, Value> rec2dict(const std::vector<ColMeta> &cols, const RmRecord *rec) {
         std::map<TabCol, Value> rec_dict;
         for (auto &col: cols) {
             TabCol key = {.tab_name = col.tab_name, .col_name = col.name};
@@ -56,12 +56,12 @@ public:
 };
 
 class QlNodeProj : public QlNode {
-    std::shared_ptr<QlNode> _prev;
+    std::unique_ptr<QlNode> _prev;
     std::vector<ColMeta> _cols;
     size_t _len;
     std::vector<size_t> _sel_idxs;
 public:
-    QlNodeProj(std::shared_ptr<QlNode> prev, const std::vector<TabCol> &sel_cols) {
+    QlNodeProj(std::unique_ptr<QlNode> prev, const std::vector<TabCol> &sel_cols) {
         _prev = std::move(prev);
 
         size_t curr_offset = 0;
@@ -90,12 +90,12 @@ public:
 
     bool is_end() const override { return _prev->is_end(); }
 
-    std::shared_ptr<RmRecord> rec() const override {
+    std::unique_ptr<RmRecord> rec() const override {
         assert(!is_end());
         auto &prev_cols = _prev->cols();
         auto prev_rec = _prev->rec();
         auto &proj_cols = _cols;
-        auto proj_rec = std::make_shared<RmRecord>(_len);
+        auto proj_rec = std::make_unique<RmRecord>(_len);
         for (size_t proj_idx = 0; proj_idx < proj_cols.size(); proj_idx++) {
             size_t prev_idx = _sel_idxs[proj_idx];
             auto &prev_col = prev_cols[prev_idx];
@@ -113,19 +113,19 @@ public:
 class QlNodeTable : public QlNode {
     std::string _tab_name;
     std::vector<Condition> _conds;
-    std::shared_ptr<RmFileHandle> _fh;
+    RmFileHandle *_fh;
     std::vector<ColMeta> _cols;
     size_t _len;
     std::vector<Condition> _fed_conds;
 
     Rid _rid;
-    std::shared_ptr<RecScan> _scan;
+    std::unique_ptr<RecScan> _scan;
 public:
     QlNodeTable(std::string tab_name, std::vector<Condition> conds) {
         _tab_name = std::move(tab_name);
         _conds = std::move(conds);
         TabMeta &tab = SmManager::db.get_table(_tab_name);
-        _fh = SmManager::fhs.at(_tab_name);
+        _fh = SmManager::fhs.at(_tab_name).get();
         _cols = tab.cols;
         _len = _cols.back().offset + _cols.back().len;
         static std::map<CompOp, CompOp> swap_op = {
@@ -169,10 +169,10 @@ public:
 
         if (index_no == -1) {
             // no index is available, scan record file
-            _scan = std::make_shared<RmScan>(_fh);
+            _scan = std::make_unique<RmScan>(_fh);
         } else {
             // index is available, scan index
-            auto ih = SmManager::ihs.at(IxManager::get_index_name(_tab_name, index_no));
+            auto ih = SmManager::ihs.at(IxManager::get_index_name(_tab_name, index_no)).get();
             Iid lower = ih->leaf_begin();
             Iid upper = ih->leaf_end();
             auto &index_col = _cols[index_no];
@@ -196,13 +196,13 @@ public:
                     break;  // TODO: maintain an interval
                 }
             }
-            _scan = std::make_shared<IxScan>(ih, lower, upper);
+            _scan = std::make_unique<IxScan>(ih, lower, upper);
         }
         // Get the first record
         while (!_scan->is_end()) {
             _rid = _scan->rid();
             auto rec = _fh->get_record(_rid);
-            if (eval_conds(_cols, _fed_conds, rec)) {
+            if (eval_conds(_cols, _fed_conds, rec.get())) {
                 break;
             }
             _scan->next();
@@ -215,7 +215,7 @@ public:
         for (_scan->next(); !_scan->is_end(); _scan->next()) {
             _rid = _scan->rid();
             auto rec = _fh->get_record(_rid);
-            if (eval_conds(_cols, _fed_conds, rec)) {
+            if (eval_conds(_cols, _fed_conds, rec.get())) {
                 break;
             }
         }
@@ -227,7 +227,7 @@ public:
 
     const std::vector<ColMeta> &cols() const override { return _cols; }
 
-    std::shared_ptr<RmRecord> rec() const override {
+    std::unique_ptr<RmRecord> rec() const override {
         assert(!is_end());
         return _fh->get_record(_rid);
     }
@@ -257,7 +257,7 @@ public:
 
     static bool eval_cond(const std::vector<ColMeta> &rec_cols,
                           const Condition &cond,
-                          const std::shared_ptr<RmRecord> &rec) {
+                          const RmRecord *rec) {
         auto lhs_col = get_col(rec_cols, cond.lhs_col);
         Buffer lhs = rec->data + lhs_col->offset;
         Buffer rhs;
@@ -292,7 +292,7 @@ public:
 
     static bool eval_conds(const std::vector<ColMeta> &rec_cols,
                            const std::vector<Condition> &conds,
-                           const std::shared_ptr<RmRecord> &rec) {
+                           const RmRecord *rec) {
         return std::all_of(conds.begin(), conds.end(), [&](const Condition &cond) {
             return eval_cond(rec_cols, cond, rec);
         });
@@ -300,14 +300,14 @@ public:
 };
 
 class QlNodeJoin : public QlNode {
-    std::shared_ptr<QlNode> _left;
-    std::shared_ptr<QlNode> _right;
+    std::unique_ptr<QlNode> _left;
+    std::unique_ptr<QlNode> _right;
     size_t _len;
     std::vector<ColMeta> _cols;
 
     std::map<TabCol, Value> _prev_feed_dict;
 public:
-    QlNodeJoin(std::shared_ptr<QlNode> left, std::shared_ptr<QlNode> right) {
+    QlNodeJoin(std::unique_ptr<QlNode> left, std::unique_ptr<QlNode> right) {
         _left = std::move(left);
         _right = std::move(right);
         _len = _left->len() + _right->len();
@@ -349,9 +349,9 @@ public:
 
     bool is_end() const override { return _left->is_end(); }
 
-    std::shared_ptr<RmRecord> rec() const override {
+    std::unique_ptr<RmRecord> rec() const override {
         assert(!is_end());
-        auto record = std::make_shared<RmRecord>(_len);
+        auto record = std::make_unique<RmRecord>(_len);
         memcpy(record->data, _left->rec()->data, _left->len());
         memcpy(record->data + _left->len(), _right->rec()->data, _right->len());
         return record;
@@ -363,7 +363,7 @@ public:
     }
 
     void feed_right() {
-        auto left_dict = rec2dict(_left->cols(), _left->rec());
+        auto left_dict = rec2dict(_left->cols(), _left->rec().get());
         auto feed_dict = _prev_feed_dict;
         feed_dict.insert(left_dict.begin(), left_dict.end());
         _right->feed(feed_dict);

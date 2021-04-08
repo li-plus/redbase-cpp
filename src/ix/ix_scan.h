@@ -1,17 +1,16 @@
 #pragma once
 
 #include "ix_defs.h"
-#include <memory>
 
 class IxIndexHandle;
 
 class IxScan : public RecScan {
-    std::shared_ptr<IxIndexHandle> _ih;
+    const IxIndexHandle *_ih;
     Iid _iid;
     Iid _end;
 public:
-    IxScan(std::shared_ptr<IxIndexHandle> ih, const Iid &lower, const Iid &upper) :
-            _ih(std::move(ih)), _iid(lower), _end(upper) {}
+    IxScan(const IxIndexHandle *ih, const Iid &lower, const Iid &upper) :
+            _ih(ih), _iid(lower), _end(upper) {}
 
     void next() override;
 

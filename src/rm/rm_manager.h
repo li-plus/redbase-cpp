@@ -30,12 +30,12 @@ public:
         PfManager::destroy_file(filename);
     }
 
-    static std::shared_ptr<RmFileHandle> open_file(const std::string &filename) {
+    static std::unique_ptr<RmFileHandle> open_file(const std::string &filename) {
         int fd = PfManager::open_file(filename);
-        return std::make_shared<RmFileHandle>(fd);
+        return std::make_unique<RmFileHandle>(fd);
     }
 
-    static void close_file(const std::shared_ptr<RmFileHandle> &fh) {
+    static void close_file(const RmFileHandle *fh) {
         PfPager::write_page(fh->fd, RM_FILE_HDR_PAGE, (Buffer) &fh->hdr, sizeof(fh->hdr));
         PfManager::close_file(fh->fd);
     }

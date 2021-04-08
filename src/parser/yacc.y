@@ -45,7 +45,7 @@ WHERE UPDATE SET SELECT INT CHAR FLOAT INDEX AND EXIT HELP
 start:
         stmt ';'
     {
-    	parse_tree = $1;
+        parse_tree = $1;
         YYACCEPT;
     }
     |   HELP
@@ -60,7 +60,7 @@ start:
     }
     |   T_EOF
     {
-    	parse_tree = nullptr;
+        parse_tree = nullptr;
         YYACCEPT;
     }
     ;
@@ -134,7 +134,7 @@ fieldList:
 field:
         colName type
     {
-    	$$ = std::make_shared<ColDef>($1, $2);
+        $$ = std::make_shared<ColDef>($1, $2);
     }
     ;
 

@@ -1,7 +1,7 @@
 #include "rm_file_handle.h"
 
-std::shared_ptr<RmRecord> RmFileHandle::get_record(const Rid &rid) const {
-    auto record = std::make_shared<RmRecord>(hdr.record_size);
+std::unique_ptr<RmRecord> RmFileHandle::get_record(const Rid &rid) const {
+    auto record = std::make_unique<RmRecord>(hdr.record_size);
     RmPageHandle ph = fetch_page(rid.page_no);
     if (!Bitmap::test(ph.bitmap, rid.slot_no)) {
         throw RecordNotFoundError(rid.page_no, rid.slot_no);

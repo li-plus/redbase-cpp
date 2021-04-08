@@ -3,6 +3,7 @@
 #include "ix_index_handle.h"
 #include "ix_defs.h"
 #include <string>
+#include <memory>
 
 class IxManager {
 public:
@@ -84,13 +85,13 @@ public:
         PfManager::destroy_file(ix_name);
     }
 
-    static std::shared_ptr<IxIndexHandle> open_index(const std::string &filename, int index_no) {
+    static std::unique_ptr<IxIndexHandle> open_index(const std::string &filename, int index_no) {
         std::string ix_name = get_index_name(filename, index_no);
         int fd = PfManager::open_file(ix_name);
-        return std::make_shared<IxIndexHandle>(fd);
+        return std::make_unique<IxIndexHandle>(fd);
     }
 
-    static void close_index(const std::shared_ptr<IxIndexHandle> &ih) {
+    static void close_index(const IxIndexHandle *ih) {
         PfPager::write_page(ih->fd, IX_FILE_HDR_PAGE, (InputBuffer) &ih->hdr, sizeof(ih->hdr));
         PfManager::close_file(ih->fd);
     }

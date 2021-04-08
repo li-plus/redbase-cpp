@@ -100,7 +100,7 @@ void IxIndexHandle::insert_entry(InputBuffer key, const Rid &rid) {
 void IxIndexHandle::delete_entry(InputBuffer key, const Rid &rid) {
     Iid lower = lower_bound(key);
     Iid upper = upper_bound(key);
-    for (IxScan scan(shared_from_this(), lower, upper); !scan.is_end(); scan.next()) {
+    for (IxScan scan(this, lower, upper); !scan.is_end(); scan.next()) {
         // load btree node
         IxNodeHandle node = fetch_node(scan.iid().page_no);
         assert(node.hdr->is_leaf);

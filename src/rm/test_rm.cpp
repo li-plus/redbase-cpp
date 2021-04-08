@@ -25,7 +25,7 @@ struct rid_equal_t {
     }
 };
 
-void check_equal(const std::shared_ptr<RmFileHandle> &fh,
+void check_equal(const RmFileHandle *fh,
                  const std::unordered_map<Rid, std::string, rid_hash_t, rid_equal_t> &mock) {
     // Test all records
     for (auto &entry: mock) {
@@ -82,11 +82,11 @@ int main() {
         assert(max_bytes <= PAGE_SIZE);
         int rand_val = rand();
         fh->hdr.num_pages = rand_val;
-        RmManager::close_file(fh);
+        RmManager::close_file(fh.get());
         // reopen file
         fh = RmManager::open_file(filename);
         assert(fh->hdr.num_pages == rand_val);
-        RmManager::close_file(fh);
+        RmManager::close_file(fh.get());
         RmManager::destroy_file(filename);
     }
     // test pages
@@ -131,17 +131,17 @@ int main() {
         }
         // Randomly re-open file
         if (round % 500 == 0) {
-            RmManager::close_file(fh);
+            RmManager::close_file(fh.get());
             fh = RmManager::open_file(filename);
         }
-        check_equal(fh, mock);
+        check_equal(fh.get(), mock);
     }
     assert(mock.size() == add_cnt - del_cnt);
     std::cout << "insert " << add_cnt << '\n'
               << "delete " << del_cnt << '\n'
               << "update " << upd_cnt << '\n';
     // clean up
-    RmManager::close_file(fh);
+    RmManager::close_file(fh.get());
     RmManager::destroy_file(filename);
     return 0;
 }

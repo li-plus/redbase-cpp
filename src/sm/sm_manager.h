@@ -14,8 +14,8 @@ struct ColDef {
 class SmManager {
 public:
     static DbMeta db;
-    static std::map<std::string, std::shared_ptr<RmFileHandle>> fhs;
-    static std::map<std::string, std::shared_ptr<IxIndexHandle>> ihs;
+    static std::map<std::string, std::unique_ptr<RmFileHandle>> fhs;
+    static std::map<std::string, std::unique_ptr<IxIndexHandle>> ihs;
 
     // Database management
     static bool is_dir(const std::string &db_name);

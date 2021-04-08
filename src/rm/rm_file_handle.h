@@ -43,7 +43,7 @@ public:
         return Bitmap::test(ph.bitmap, rid.slot_no);
     }
 
-    std::shared_ptr<RmRecord> get_record(const Rid &rid) const;
+    std::unique_ptr<RmRecord> get_record(const Rid &rid) const;
 
     Rid insert_record(Buffer buf);
 
