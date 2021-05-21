@@ -6,11 +6,28 @@
 %option nounput
     /* we don't need input() function */
 %option noinput
+    /* enable location */
+%option bison-bridge
+%option bison-locations
 
 %{
 #include "ast.h"
 #include "yacc.tab.h"
 #include <iostream>
+
+// automatically update location
+#define YY_USER_ACTION \
+    yylloc->first_line = yylloc->last_line; \
+    yylloc->first_column = yylloc->last_column; \
+    for (int i = 0; yytext[i] != '\0'; i++) { \
+        if(yytext[i] == '\n') { \
+            yylloc->last_line++; \
+            yylloc->last_column = 1; \
+        } else { \
+            yylloc->last_column++; \
+        } \
+    }
+
 %}
 
 alpha [a-zA-Z]
@@ -24,14 +41,14 @@ value_float {sign}?{digit}+\.({digit}+)?
 value_string '[^']*'
 single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."
 
-%x comment
+%x STATE_COMMENT
 
 %%
     /* block comment */
-"/*" { BEGIN(comment); }
-<comment>"*/" { BEGIN(INITIAL); }
-<comment>[^*] { /* ignore the text of the comment */ }
-<comment>\* { /* ignore *'s that aren't part of */ }
+"/*" { BEGIN(STATE_COMMENT); }
+<STATE_COMMENT>"*/" { BEGIN(INITIAL); }
+<STATE_COMMENT>[^*] { /* ignore the text of the comment */ }
+<STATE_COMMENT>\* { /* ignore *'s that aren't part of */ }
     /* single line comment */
 "--".* { /* ignore single line comment */ }
     /* white space and new line */
@@ -67,20 +84,20 @@ single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."
 {single_op} { return yytext[0]; }
     /* id */
 {identifier} {
-    yylval.sv_str = yytext;
+    yylval->sv_str = yytext;
     return IDENTIFIER;
 }
     /* literals */
 {value_int} {
-    yylval.sv_int = atoi(yytext);
+    yylval->sv_int = atoi(yytext);
     return VALUE_INT;
 }
 {value_float} {
-    yylval.sv_float = atof(yytext);
+    yylval->sv_float = atof(yytext);
     return VALUE_FLOAT;
 }
 {value_string} {
-    yylval.sv_str = std::string(yytext + 1, strlen(yytext) - 2);
+    yylval->sv_str = std::string(yytext + 1, strlen(yytext) - 2);
     return VALUE_STRING;
 }
     /* EOF */

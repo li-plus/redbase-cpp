@@ -1,16 +1,22 @@
 %{
 #include "ast.h"
+#include "yacc.tab.h"
 #include <iostream>
 #include <memory>
 
-int yylex();
+int yylex(YYSTYPE *yylval, YYLTYPE *yylloc);
 
-void yyerror(const char* s) {
-    std::cerr << "Parser Error: " << s << std::endl;
+void yyerror(YYLTYPE *locp, const char* s) {
+    std::cerr << "Parser Error at line " << locp->first_line << " column " << locp->first_column << ": " << s << std::endl;
 }
 
 using namespace ast;
 %}
+
+// request a pure (reentrant) parser
+%define api.pure full
+// enable location in error handler
+%locations
 
 // keywords
 %token SHOW TABLES CREATE TABLE DROP DESC INSERT INTO VALUES DELETE FROM
