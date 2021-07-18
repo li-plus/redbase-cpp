@@ -16,16 +16,16 @@
 constexpr int MAX_FILES = 32;
 constexpr int MAX_PAGES = 128;
 
-std::unordered_map<int, Buffer> mock;   // fd -> buffer
+std::unordered_map<int, uint8_t *> mock;   // fd -> buffer
 
-Buffer mock_get_page(int fd, int page_no) {
+uint8_t *mock_get_page(int fd, int page_no) {
     return &mock[fd][page_no * PAGE_SIZE];
 }
 
 void check_disk(int fd, int page_no) {
     static uint8_t buf[PAGE_SIZE];
     PfPager::read_page(fd, page_no, buf, PAGE_SIZE);
-    Buffer mock_buf = mock_get_page(fd, page_no);
+    uint8_t *mock_buf = mock_get_page(fd, page_no);
     assert(memcmp(buf, mock_buf, PAGE_SIZE) == 0);
 }
 
@@ -40,7 +40,7 @@ void check_disk_all() {
 
 void check_cache(int fd, int page_no) {
     Page *page = PfManager::pager.fetch_page(fd, page_no);
-    Buffer mock_buf = mock_get_page(fd, page_no);
+    uint8_t *mock_buf = mock_get_page(fd, page_no);
     assert(memcmp(page->buf, mock_buf, PAGE_SIZE) == 0);
 }
 
@@ -53,7 +53,7 @@ void check_cache_all() {
     }
 }
 
-void rand_buf(int size, OutputBuffer buf) {
+void rand_buf(int size, uint8_t *buf) {
     for (int i = 0; i < size; i++) {
         int rand_ch = rand() & 0xff;
         buf[i] = rand_ch;
@@ -109,7 +109,7 @@ int main() {
             rand_buf(PAGE_SIZE, init_buf);
             Page *page = PfManager::pager.create_page(fd, page_no);
             memcpy(page->buf, init_buf, PAGE_SIZE);
-            Buffer mock_buf = mock_get_page(fd, page_no);
+            uint8_t *mock_buf = mock_get_page(fd, page_no);
             memcpy(mock_buf, init_buf, PAGE_SIZE);
             num_pages++;
         }
@@ -141,7 +141,7 @@ int main() {
         int page_no = rand() % MAX_PAGES;
         // get page
         Page *page = PfManager::pager.fetch_page(fd, page_no);
-        Buffer mock_buf = mock_get_page(fd, page_no);
+        uint8_t *mock_buf = mock_get_page(fd, page_no);
         assert(memcmp(page->buf, mock_buf, PAGE_SIZE) == 0);
 
         // modify
@@ -163,7 +163,7 @@ int main() {
         if (rand() % 100 == 0) {
             PfManager::close_file(fd);
             auto filename = fd2name[fd];
-            Buffer buf = mock[fd];
+            uint8_t *buf = mock[fd];
             fd2name.erase(fd);
             mock.erase(fd);
             int new_fd = PfManager::open_file(filename);

@@ -49,14 +49,14 @@ void check_equal(const IxIndexHandle *ih, const std::multimap<int, Rid> &mock) {
         // test lower bound
         {
             auto mock_lower = mock.lower_bound(mock_key);
-            Iid iid = ih->lower_bound((InputBuffer) &mock_key);
+            Iid iid = ih->lower_bound((const uint8_t *) &mock_key);
             Rid rid = ih->get_rid(iid);
             assert(rid == mock_lower->second);
         }
         // test upper bound
         {
             auto mock_upper = mock.upper_bound(mock_key);
-            Iid iid = ih->upper_bound((InputBuffer) &mock_key);
+            Iid iid = ih->upper_bound((const uint8_t *) &mock_key);
             if (mock_upper == mock.end()) {
                 assert(iid == ih->leaf_end());
             } else {
@@ -105,7 +105,7 @@ void test_ix_insert_delete(int order, int round) {
     for (int i = 0; i < round; i++) {
         int rand_key = rand() % round;
         Rid rand_val = {.page_no = rand(), .slot_no = rand()};
-        ih->insert_entry((InputBuffer) &rand_key, rand_val);
+        ih->insert_entry((const uint8_t *) &rand_key, rand_val);
         mock.insert(std::make_pair(rand_key, rand_val));
         if (round % 500 == 0) {
             IxManager::close_index(ih.get());
@@ -119,7 +119,7 @@ void test_ix_insert_delete(int order, int round) {
         auto it = mock.begin();
         int key = it->first;
         Rid rid = it->second;
-        ih->delete_entry((InputBuffer) &key, rid);
+        ih->delete_entry((const uint8_t *) &key, rid);
         mock.erase(it);
         if (round % 500 == 0) {
             IxManager::close_index(ih.get());
@@ -153,7 +153,7 @@ void test_ix(int order, int round) {
             // Insert
             int rand_key = rand() % round;
             Rid rand_val = {.page_no = rand(), .slot_no = rand()};
-            ih->insert_entry((InputBuffer) &rand_key, rand_val);
+            ih->insert_entry((const uint8_t *) &rand_key, rand_val);
             mock.insert(std::make_pair(rand_key, rand_val));
             add_cnt++;
         } else {
@@ -163,7 +163,7 @@ void test_ix(int order, int round) {
             for (int k = 0; k < rand_idx; k++) { it++; }
             int key = it->first;
             Rid rid = it->second;
-            ih->delete_entry((InputBuffer) &key, rid);
+            ih->delete_entry((const uint8_t *) &key, rid);
             mock.erase(it);
             del_cnt++;
         }
@@ -182,7 +182,7 @@ void test_ix(int order, int round) {
         for (int k = 0; k < rand_idx; k++) { it++; }
         int key = it->first;
         Rid rid = it->second;
-        ih->delete_entry((InputBuffer) &key, rid);
+        ih->delete_entry((const uint8_t *) &key, rid);
         mock.erase(it);
         // Randomly re-open file
         if (round % 500 == 0) {

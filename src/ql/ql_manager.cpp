@@ -254,7 +254,7 @@ void QlManager::select_from(std::vector<TabCol> sel_cols,
         std::vector<std::string> columns;
         for (auto &col: query_plan->cols()) {
             std::string col_str;
-            Buffer rec_buf = rec->data + col.offset;
+            uint8_t *rec_buf = rec->data + col.offset;
             if (col.type == TYPE_INT) {
                 col_str = std::to_string(*(int *) rec_buf);
             } else if (col.type == TYPE_FLOAT) {

@@ -40,10 +40,6 @@ static inline std::string coltype2str(ColType type) {
     return m.at(type);
 }
 
-typedef uint8_t *Buffer;
-typedef const uint8_t *InputBuffer;
-typedef uint8_t *OutputBuffer;
-
 class RecScan {
 public:
     virtual ~RecScan() = default;

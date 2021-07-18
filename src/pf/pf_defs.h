@@ -22,6 +22,6 @@ struct PageIdHash {
 
 struct Page {
     PageId id;
-    Buffer buf;
+    uint8_t *buf;
     bool is_dirty;
 };

@@ -6,13 +6,13 @@ std::unique_ptr<RmRecord> RmFileHandle::get_record(const Rid &rid) const {
     if (!Bitmap::test(ph.bitmap, rid.slot_no)) {
         throw RecordNotFoundError(rid.page_no, rid.slot_no);
     }
-    Buffer slot = ph.get_slot(rid.slot_no);
+    uint8_t *slot = ph.get_slot(rid.slot_no);
     memcpy(record->data, slot, hdr.record_size);
     record->size = hdr.record_size;
     return record;
 }
 
-Rid RmFileHandle::insert_record(Buffer buf) {
+Rid RmFileHandle::insert_record(uint8_t *buf) {
     RmPageHandle ph = create_page();
     // get slot number
     int slot_no = Bitmap::first_bit(false, ph.bitmap, hdr.num_records_per_page);
@@ -27,7 +27,7 @@ Rid RmFileHandle::insert_record(Buffer buf) {
         hdr.first_free = ph.hdr->next_free;
     }
     // copy record data into slot
-    Buffer slot = ph.get_slot(slot_no);
+    uint8_t *slot = ph.get_slot(slot_no);
     memcpy(slot, buf, hdr.record_size);
     Rid rid{.page_no = ph.page->id.page_no, .slot_no = slot_no};
     return rid;
@@ -47,13 +47,13 @@ void RmFileHandle::delete_record(const Rid &rid) {
     ph.hdr->num_records--;
 }
 
-void RmFileHandle::update_record(const Rid &rid, Buffer buf) {
+void RmFileHandle::update_record(const Rid &rid, uint8_t *buf) {
     RmPageHandle ph = fetch_page(rid.page_no);
     if (!Bitmap::test(ph.bitmap, rid.slot_no)) {
         throw RecordNotFoundError(rid.page_no, rid.slot_no);
     }
     PfPager::mark_dirty(ph.page);
-    Buffer slot = ph.get_slot(rid.slot_no);
+    uint8_t *slot = ph.get_slot(rid.slot_no);
     memcpy(slot, buf, hdr.record_size);
 }
 

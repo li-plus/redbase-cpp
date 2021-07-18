@@ -22,7 +22,7 @@ struct RmPageHdr {
 };
 
 struct RmRecord {
-    Buffer data;
+    uint8_t *data;
     int size;
 
     RmRecord(const RmRecord &other) = delete;

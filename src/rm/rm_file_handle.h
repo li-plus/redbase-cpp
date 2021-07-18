@@ -6,8 +6,8 @@
 
 struct RmPageHandle {
     RmPageHdr *hdr;
-    Buffer bitmap;
-    Buffer slots;
+    uint8_t *bitmap;
+    uint8_t *slots;
     Page *page;
     const RmFileHdr *fhdr;
 
@@ -17,7 +17,7 @@ struct RmPageHandle {
         slots = bitmap + fhdr->bitmap_size;
     }
 
-    Buffer get_slot(int slot_no) const {
+    uint8_t *get_slot(int slot_no) const {
         return slots + slot_no * fhdr->record_size;
     }
 };
@@ -31,7 +31,7 @@ public:
 
     RmFileHandle(int fd_) {
         fd = fd_;
-        PfPager::read_page(fd, RM_FILE_HDR_PAGE, (Buffer) &hdr, sizeof(hdr));
+        PfPager::read_page(fd, RM_FILE_HDR_PAGE, (uint8_t *) &hdr, sizeof(hdr));
     }
 
     RmFileHandle(const RmFileHandle &other) = delete;
@@ -45,11 +45,11 @@ public:
 
     std::unique_ptr<RmRecord> get_record(const Rid &rid) const;
 
-    Rid insert_record(Buffer buf);
+    Rid insert_record(uint8_t *buf);
 
     void delete_record(const Rid &rid);
 
-    void update_record(const Rid &rid, Buffer buf);
+    void update_record(const Rid &rid, uint8_t *buf);
 
 private:
     RmPageHandle fetch_page(int page_no) const;

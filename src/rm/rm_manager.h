@@ -22,7 +22,7 @@ public:
         hdr.num_records_per_page = (BITMAP_WIDTH * (PAGE_SIZE - 1 - (int) sizeof(RmFileHdr)) + 1) /
                                    (1 + record_size * BITMAP_WIDTH);
         hdr.bitmap_size = (hdr.num_records_per_page + BITMAP_WIDTH - 1) / BITMAP_WIDTH;
-        PfPager::write_page(fd, RM_FILE_HDR_PAGE, (Buffer) &hdr, sizeof(hdr));
+        PfPager::write_page(fd, RM_FILE_HDR_PAGE, (uint8_t *) &hdr, sizeof(hdr));
         PfManager::close_file(fd);
     }
 
@@ -36,7 +36,7 @@ public:
     }
 
     static void close_file(const RmFileHandle *fh) {
-        PfPager::write_page(fh->fd, RM_FILE_HDR_PAGE, (Buffer) &fh->hdr, sizeof(fh->hdr));
+        PfPager::write_page(fh->fd, RM_FILE_HDR_PAGE, (uint8_t *) &fh->hdr, sizeof(fh->hdr));
         PfManager::close_file(fh->fd);
     }
 };

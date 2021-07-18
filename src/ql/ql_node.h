@@ -37,7 +37,7 @@ public:
         for (auto &col: cols) {
             TabCol key = {.tab_name = col.tab_name, .col_name = col.name};
             Value val;
-            Buffer val_buf = rec->data + col.offset;
+            uint8_t *val_buf = rec->data + col.offset;
             if (col.type == TYPE_INT) {
                 val.set_int(*(int *) val_buf);
             } else if (col.type == TYPE_FLOAT) {
@@ -178,7 +178,7 @@ public:
             auto &index_col = _cols[index_no];
             for (auto &cond: _fed_conds) {
                 if (cond.is_rhs_val && cond.op != OP_NE && cond.lhs_col.col_name == index_col.name) {
-                    Buffer rhs_key = cond.rhs_val.raw->data;
+                    uint8_t *rhs_key = cond.rhs_val.raw->data;
                     if (cond.op == OP_EQ) {
                         lower = ih->lower_bound(rhs_key);
                         upper = ih->upper_bound(rhs_key);
@@ -259,8 +259,8 @@ public:
                           const Condition &cond,
                           const RmRecord *rec) {
         auto lhs_col = get_col(rec_cols, cond.lhs_col);
-        Buffer lhs = rec->data + lhs_col->offset;
-        Buffer rhs;
+        uint8_t *lhs = rec->data + lhs_col->offset;
+        uint8_t *rhs;
         ColType rhs_type;
         if (cond.is_rhs_val) {
             rhs_type = cond.rhs_val.type;

@@ -188,7 +188,7 @@ void SmManager::create_index(const std::string &tab_name, const std::string &col
     // Index all records into index
     for (RmScan rm_scan(fh); !rm_scan.is_end(); rm_scan.next()) {
         auto rec = fh->get_record(rm_scan.rid());
-        InputBuffer key = rec->data + col->offset;
+        const uint8_t *key = rec->data + col->offset;
         ih->insert_entry(key, rm_scan.rid());
     }
     // Store index handle

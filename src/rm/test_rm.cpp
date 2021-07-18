@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <iostream>
 
-void rand_buf(int size, Buffer out_buf) {
+void rand_buf(int size, uint8_t *out_buf) {
     for (int i = 0; i < size; i++) {
         out_buf[i] = rand() & 0xff;
     }

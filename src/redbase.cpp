@@ -1,12 +1,20 @@
 #include "interp.h"
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <signal.h>
+
+static bool should_exit = false;
+
+void sigint_handler(int signo) {
+    should_exit = true;
+}
 
 int main(int argc, char **argv) {
     if (argc != 2) {
-        std::cerr << "Usage: redbase <database>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <database>" << std::endl;
         exit(1);
     }
+    signal(SIGINT, sigint_handler);
     try {
         std::cout << "\n"
                      "  ██████╗ ███████╗██████╗ ██████╗  █████╗ ███████╗███████╗\n"
@@ -28,16 +36,20 @@ int main(int argc, char **argv) {
         SmManager::open_db(db_name);
 
         // Wait for user input
-        bool is_cont = true;  // continue?
-        while (is_cont) {
-            char *line = readline("redbase> ");
-            if (line == nullptr) {
+        while (!should_exit) {
+            char *line_read = readline("redbase> ");
+            if (line_read == nullptr) {
                 // EOF encountered
                 break;
             }
-            if (strlen(line) > 0) {
-                add_history(line);
-                YY_BUFFER_STATE buf = yy_scan_string(line);
+            std::string line = line_read;
+            free(line_read);
+
+            if (should_exit) { break; }
+
+            if (!line.empty()) {
+                add_history(line.c_str());
+                YY_BUFFER_STATE buf = yy_scan_string(line.c_str());
                 if (yyparse() == 0) {
                     if (ast::parse_tree != nullptr) {
                         try {
@@ -46,12 +58,11 @@ int main(int argc, char **argv) {
                             std::cerr << e.what() << std::endl;
                         }
                     } else {
-                        is_cont = false;
+                        should_exit = true;
                     }
                 }
                 yy_delete_buffer(buf);
             }
-            free(line);
         }
         SmManager::close_db();
         std::cout << "Bye" << std::endl;

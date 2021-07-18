@@ -46,7 +46,7 @@ public:
                 .last_leaf = IX_INIT_ROOT_PAGE,
         };
         static uint8_t page_buf[PAGE_SIZE];
-        PfPager::write_page(fd, IX_FILE_HDR_PAGE, (InputBuffer) &fhdr, sizeof(fhdr));
+        PfPager::write_page(fd, IX_FILE_HDR_PAGE, (const uint8_t *) &fhdr, sizeof(fhdr));
         // Create leaf list header page and write to file
         {
             auto phdr = (IxPageHdr *) page_buf;
@@ -92,7 +92,7 @@ public:
     }
 
     static void close_index(const IxIndexHandle *ih) {
-        PfPager::write_page(ih->fd, IX_FILE_HDR_PAGE, (InputBuffer) &ih->hdr, sizeof(ih->hdr));
+        PfPager::write_page(ih->fd, IX_FILE_HDR_PAGE, (const uint8_t *) &ih->hdr, sizeof(ih->hdr));
         PfManager::close_file(ih->fd);
     }
 };

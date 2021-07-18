@@ -30,13 +30,13 @@ public:
         assert(_free_pages.size() == NUM_CACHE_PAGES);
     }
 
-    static void read_page(int fd, int page_no, OutputBuffer buf, int num_bytes) {
+    static void read_page(int fd, int page_no, uint8_t *buf, int num_bytes) {
         lseek(fd, page_no * PAGE_SIZE, SEEK_SET);
         ssize_t bytes_read = read(fd, buf, num_bytes);
         if (bytes_read != num_bytes) { throw UnixError(); }
     }
 
-    static void write_page(int fd, int page_no, InputBuffer buf, int num_bytes) {
+    static void write_page(int fd, int page_no, const uint8_t *buf, int num_bytes) {
         lseek(fd, page_no * PAGE_SIZE, SEEK_SET);
         ssize_t bytes_write = write(fd, buf, num_bytes);
         if (bytes_write != num_bytes) { throw UnixError(); }

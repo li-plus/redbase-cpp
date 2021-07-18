@@ -17,6 +17,8 @@ using namespace ast;
 %define api.pure full
 // enable location in error handler
 %locations
+// enable verbose syntax error message
+%define parse.error verbose
 
 // keywords
 %token SHOW TABLES CREATE TABLE DROP DESC INSERT INTO VALUES DELETE FROM

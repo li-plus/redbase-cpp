@@ -4,10 +4,10 @@
 
 IxIndexHandle::IxIndexHandle(int fd_) {
     fd = fd_;
-    PfPager::read_page(fd, IX_FILE_HDR_PAGE, (OutputBuffer) &hdr, sizeof(hdr));
+    PfPager::read_page(fd, IX_FILE_HDR_PAGE, (uint8_t *) &hdr, sizeof(hdr));
 }
 
-void IxIndexHandle::insert_entry(InputBuffer key, const Rid &rid) {
+void IxIndexHandle::insert_entry(const uint8_t *key, const Rid &rid) {
     Iid iid = upper_bound(key);
     IxNodeHandle node = fetch_node(iid.page_no);
     PfPager::mark_dirty(node.page);
@@ -78,7 +78,7 @@ void IxIndexHandle::insert_entry(InputBuffer key, const Rid &rid) {
             maintain_child(bro, child_idx);
         }
         // Copy the last key up to its parent
-        Buffer popup_key = node.get_key(split_idx - 1);
+        uint8_t *popup_key = node.get_key(split_idx - 1);
         // Load parent node
         IxNodeHandle parent = fetch_node(node.hdr->parent);
         PfPager::mark_dirty(parent.page);
@@ -97,7 +97,7 @@ void IxIndexHandle::insert_entry(InputBuffer key, const Rid &rid) {
     }
 }
 
-void IxIndexHandle::delete_entry(InputBuffer key, const Rid &rid) {
+void IxIndexHandle::delete_entry(const uint8_t *key, const Rid &rid) {
     Iid lower = lower_bound(key);
     Iid upper = upper_bound(key);
     for (IxScan scan(this, lower, upper); !scan.is_end(); scan.next()) {
@@ -239,7 +239,7 @@ Rid IxIndexHandle::get_rid(const Iid &iid) const {
     return *node.get_rid(iid.slot_no);
 }
 
-Iid IxIndexHandle::lower_bound(InputBuffer key) const {
+Iid IxIndexHandle::lower_bound(const uint8_t *key) const {
     IxNodeHandle node = fetch_node(hdr.root_page);
     // Travel through inner nodes
     while (!node.hdr->is_leaf) {
@@ -257,7 +257,7 @@ Iid IxIndexHandle::lower_bound(InputBuffer key) const {
     return iid;
 }
 
-Iid IxIndexHandle::upper_bound(InputBuffer key) const {
+Iid IxIndexHandle::upper_bound(const uint8_t *key) const {
     IxNodeHandle node = fetch_node(hdr.root_page);
     // Travel through inner nodes
     while (!node.hdr->is_leaf) {
@@ -321,8 +321,8 @@ void IxIndexHandle::maintain_parent(const IxNodeHandle &node) {
         // Load its parent
         IxNodeHandle parent = fetch_node(curr.hdr->parent);
         int rank = parent.find_child(curr);
-        Buffer parent_key = parent.get_key(rank);
-        Buffer child_max_key = curr.get_key(curr.hdr->num_key - 1);
+        uint8_t *parent_key = parent.get_key(rank);
+        uint8_t *child_max_key = curr.get_key(curr.hdr->num_key - 1);
         if (memcmp(parent_key, child_max_key, hdr.col_len) == 0) {
             break;
         }
