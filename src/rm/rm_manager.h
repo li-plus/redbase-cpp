@@ -18,8 +18,8 @@ public:
         hdr.record_size = record_size;
         hdr.num_pages = 1;
         hdr.first_free = RM_NO_PAGE;
-        // We have: sizeof(hdr) + (n + 7) / 8 + n * record_size <= PAGE_SIZE
-        hdr.num_records_per_page = (BITMAP_WIDTH * (PAGE_SIZE - 1 - (int) sizeof(RmFileHdr)) + 1) /
+        // We have: sizeof(RmPageHdr) + (n + 7) / 8 + n * record_size <= PAGE_SIZE
+        hdr.num_records_per_page = (BITMAP_WIDTH * (PAGE_SIZE - 1 - (int) sizeof(RmPageHdr)) + 1) /
                                    (1 + record_size * BITMAP_WIDTH);
         hdr.bitmap_size = (hdr.num_records_per_page + BITMAP_WIDTH - 1) / BITMAP_WIDTH;
         PfPager::write_page(fd, RM_FILE_HDR_PAGE, (uint8_t *) &hdr, sizeof(hdr));
