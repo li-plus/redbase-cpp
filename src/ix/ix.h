@@ -1,4 +1,4 @@
 #pragma once
 
-#include "ix_scan.h"
-#include "ix_manager.h"
+#include "ix/ix_manager.h"
+#include "ix/ix_scan.h"

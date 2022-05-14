@@ -1,35 +1,34 @@
-#include "bitmap.h"
-#include <cassert>
-#include <ctime>
+#include "rm/bitmap.h"
 #include <bitset>
+#include <gtest/gtest.h>
 
 constexpr int MAX_N = 4096;
 
 void check_equal(uint8_t *bm, std::bitset<MAX_N> &mock) {
     for (int i = 0; i < MAX_N; i++) {
-        assert(Bitmap::test(bm, i) == mock.test(i));
+        EXPECT_EQ(Bitmap::test(bm, i), mock.test(i));
     }
     int first_zero = Bitmap::first_bit(false, bm, MAX_N);
     if (first_zero < MAX_N) {
-        assert(!Bitmap::test(bm, first_zero));
+        EXPECT_FALSE(Bitmap::test(bm, first_zero));
     }
     for (int i = 0; i < first_zero; i++) {
-        assert(Bitmap::test(bm, i));
+        EXPECT_TRUE(Bitmap::test(bm, i));
     }
     int first_one = Bitmap::first_bit(true, bm, MAX_N);
     if (first_one < MAX_N) {
-        assert(Bitmap::test(bm, first_one));
+        EXPECT_TRUE(Bitmap::test(bm, first_one));
     }
     for (int i = 0; i < first_one; i++) {
-        assert(!Bitmap::test(bm, i));
+        EXPECT_FALSE(Bitmap::test(bm, i));
     }
 }
 
-int main() {
-    srand((unsigned) time(nullptr));
+TEST(Bitmap, basic) {
+    srand((unsigned)time(nullptr));
 
-    uint8_t bm[MAX_N / BITMAP_WIDTH];
-    Bitmap::init(bm, MAX_N / BITMAP_WIDTH);
+    uint8_t bm[MAX_N / Bitmap::WIDTH];
+    Bitmap::init(bm, MAX_N / Bitmap::WIDTH);
     std::bitset<MAX_N> mock;
 
     for (int round = 0; round < 10000; round++) {
@@ -44,5 +43,4 @@ int main() {
         }
         check_equal(bm, mock);
     }
-    return 0;
 }

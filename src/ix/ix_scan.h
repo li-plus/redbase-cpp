@@ -1,16 +1,12 @@
 #pragma once
 
-#include "ix_defs.h"
+#include "ix/ix_defs.h"
 
 class IxIndexHandle;
 
 class IxScan : public RecScan {
-    const IxIndexHandle *_ih;
-    Iid _iid;
-    Iid _end;
-public:
-    IxScan(const IxIndexHandle *ih, const Iid &lower, const Iid &upper) :
-            _ih(ih), _iid(lower), _end(upper) {}
+  public:
+    IxScan(const IxIndexHandle *ih, const Iid &lower, const Iid &upper) : _ih(ih), _iid(lower), _end(upper) {}
 
     void next() override;
 
@@ -19,4 +15,9 @@ public:
     Rid rid() const override;
 
     const Iid &iid() const { return _iid; }
+
+  private:
+    const IxIndexHandle *_ih;
+    Iid _iid;
+    Iid _end;
 };

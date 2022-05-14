@@ -1,10 +1,130 @@
-#include "ix_index_handle.h"
-#include "ix_scan.h"
+#include "ix/ix_index_handle.h"
+#include "ix/ix_scan.h"
+#include <cassert>
 
+int ix_compare(const uint8_t *a, const uint8_t *b, ColType type, int col_len) {
+    switch (type) {
+    case TYPE_INT: {
+        int ia = *(int *)a;
+        int ib = *(int *)b;
+        return (ia < ib) ? -1 : ((ia > ib) ? 1 : 0);
+    }
+    case TYPE_FLOAT: {
+        float fa = *(float *)a;
+        float fb = *(float *)b;
+        return (fa < fb) ? -1 : ((fa > fb) ? 1 : 0);
+    }
+    case TYPE_STRING:
+        return memcmp(a, b, col_len);
+    default:
+        throw InternalError("Unexpected data type");
+    }
+}
+
+IxNodeHandle::IxNodeHandle(const IxFileHdr *ihdr_, Page *page_) {
+    ihdr = ihdr_;
+    page = page_;
+    hdr = (IxPageHdr *)page->buf;
+    keys = page->buf + ihdr->key_offset;
+    rids = (Rid *)(page->buf + ihdr->rid_offset);
+}
+
+int IxNodeHandle::lower_bound(const uint8_t *target) const {
+    if (binary_search) {
+        int lo = 0, hi = hdr->num_key;
+        while (lo < hi) {
+            int mid = (lo + hi) / 2;
+            uint8_t *key_addr = get_key(mid);
+            if (ix_compare(target, key_addr, ihdr->col_type, ihdr->col_len) <= 0) {
+                hi = mid;
+            } else {
+                lo = mid + 1;
+            }
+        }
+        return lo;
+    } else {
+        int key_idx = 0;
+        while (key_idx < hdr->num_key) {
+            uint8_t *key_addr = get_key(key_idx);
+            if (ix_compare(target, key_addr, ihdr->col_type, ihdr->col_len) <= 0) {
+                break;
+            }
+            key_idx++;
+        }
+        return key_idx;
+    }
+}
+
+int IxNodeHandle::upper_bound(const uint8_t *key) const {
+    if (binary_search) {
+        int lo = 0, hi = hdr->num_key;
+        while (lo < hi) {
+            int mid = (lo + hi) / 2;
+            uint8_t *key_slot = get_key(mid);
+            if (ix_compare(key, key_slot, ihdr->col_type, ihdr->col_len) < 0) {
+                hi = mid;
+            } else {
+                lo = mid + 1;
+            }
+        }
+        return lo;
+    } else {
+        int key_idx = 0;
+        while (key_idx < hdr->num_key) {
+            uint8_t *key_addr = get_key(key_idx);
+            if (ix_compare(key, key_addr, ihdr->col_type, ihdr->col_len) < 0) {
+                break;
+            }
+            key_idx++;
+        }
+        return key_idx;
+    }
+}
+
+void IxNodeHandle::insert_keys(int pos, const uint8_t *key, int n) {
+    uint8_t *key_slot = get_key(pos);
+    memmove(key_slot + n * ihdr->col_len, key_slot, (hdr->num_key - pos) * ihdr->col_len);
+    memcpy(key_slot, key, n * ihdr->col_len);
+    hdr->num_key += n;
+}
+
+void IxNodeHandle::insert_key(int pos, const uint8_t *key) { insert_keys(pos, key, 1); }
+
+void IxNodeHandle::erase_key(int pos) {
+    uint8_t *key = get_key(pos);
+    memmove(key, key + ihdr->col_len, (hdr->num_key - pos - 1) * ihdr->col_len);
+    hdr->num_key--;
+}
+
+void IxNodeHandle::insert_rids(int pos, const Rid *rid, int n) {
+    Rid *rid_slot = get_rid(pos);
+    memmove(rid_slot + n, rid_slot, (hdr->num_child - pos) * sizeof(Rid));
+    memcpy(rid_slot, rid, n * sizeof(Rid));
+    hdr->num_child += n;
+}
+
+void IxNodeHandle::insert_rid(int pos, const Rid &rid) { insert_rids(pos, &rid, 1); }
+
+void IxNodeHandle::erase_rid(int pos) {
+    Rid *rid = get_rid(pos);
+    memmove(rid, rid + 1, (hdr->num_child - pos - 1) * sizeof(Rid));
+    hdr->num_child--;
+}
+
+int IxNodeHandle::find_child(const IxNodeHandle &child) const {
+    int rank;
+    for (rank = 0; rank < hdr->num_child; rank++) {
+        if (get_rid(rank)->page_no == child.page->id.page_no) {
+            break;
+        }
+    }
+    assert(rank < hdr->num_child);
+    return rank;
+}
 
 IxIndexHandle::IxIndexHandle(int fd_) {
     fd = fd_;
-    PfPager::read_page(fd, IX_FILE_HDR_PAGE, (uint8_t *) &hdr, sizeof(hdr));
+    PfPager::read_page(fd, IX_FILE_HDR_PAGE, (uint8_t *)&hdr, sizeof(hdr));
 }
 
 void IxIndexHandle::insert_entry(const uint8_t *key, const Rid &rid) {
@@ -26,13 +146,13 @@ void IxIndexHandle::insert_entry(const uint8_t *key, const Rid &rid) {
             // If current page is root node, allocate new root
             IxNodeHandle root = create_node();
             *root.hdr = {
-                    .next_free = IX_NO_PAGE,
-                    .parent = IX_NO_PAGE,
-                    .num_key = 0,
-                    .num_child = 0,
-                    .is_leaf = false,
-                    .prev_leaf = IX_NO_PAGE,
-                    .next_leaf = IX_NO_PAGE,
+                .next_free = IX_NO_PAGE,
+                .parent = IX_NO_PAGE,
+                .num_key = 0,
+                .num_child = 0,
+                .is_leaf = false,
+                .prev_leaf = IX_NO_PAGE,
+                .next_leaf = IX_NO_PAGE,
             };
             // Insert current node's key & rid
             Rid curr_rid = {.page_no = node.page->id.page_no, .slot_no = -1};
@@ -46,13 +166,13 @@ void IxIndexHandle::insert_entry(const uint8_t *key, const Rid &rid) {
         // Allocate brother node
         IxNodeHandle bro = create_node();
         *bro.hdr = {
-                .next_free = IX_NO_PAGE,
-                .parent = node.hdr->parent, // They have the same parent
-                .num_key = 0,
-                .num_child = 0,
-                .is_leaf = node.hdr->is_leaf, // Brother node is leaf only if current node is leaf.
-                .prev_leaf = IX_NO_PAGE,
-                .next_leaf = IX_NO_PAGE,
+            .next_free = IX_NO_PAGE,
+            .parent = node.hdr->parent, // They have the same parent
+            .num_key = 0,
+            .num_child = 0,
+            .is_leaf = node.hdr->is_leaf, // Brother node is leaf only if current node is leaf.
+            .prev_leaf = IX_NO_PAGE,
+            .next_leaf = IX_NO_PAGE,
         };
         if (bro.hdr->is_leaf) {
             // maintain brother node's leaf pointer
@@ -244,16 +364,15 @@ Iid IxIndexHandle::lower_bound(const uint8_t *key) const {
     // Travel through inner nodes
     while (!node.hdr->is_leaf) {
         int key_idx = node.lower_bound(key);
-        if (key_idx >= node.hdr->num_key) { return leaf_end(); }
+        if (key_idx >= node.hdr->num_key) {
+            return leaf_end();
+        }
         Rid *child = node.get_rid(key_idx);
         node = fetch_node(child->page_no);
     }
     // Now we come to a leaf node, we do a sequential search
     int key_idx = node.lower_bound(key);
-    Iid iid{
-            .page_no = node.page->id.page_no,
-            .slot_no = key_idx
-    };
+    Iid iid{.page_no = node.page->id.page_no, .slot_no = key_idx};
     return iid;
 }
 
@@ -262,33 +381,26 @@ Iid IxIndexHandle::upper_bound(const uint8_t *key) const {
     // Travel through inner nodes
     while (!node.hdr->is_leaf) {
         int key_idx = node.upper_bound(key);
-        if (key_idx >= node.hdr->num_key) { return leaf_end(); }
+        if (key_idx >= node.hdr->num_key) {
+            return leaf_end();
+        }
         Rid *child = node.get_rid(key_idx);
         node = fetch_node(child->page_no);
     }
     // Now we come to a leaf node, we do a sequential search
     int key_idx = node.upper_bound(key);
-    Iid iid = {
-            .page_no = node.page->id.page_no,
-            .slot_no = key_idx
-    };
+    Iid iid = {.page_no = node.page->id.page_no, .slot_no = key_idx};
     return iid;
 }
 
 Iid IxIndexHandle::leaf_end() const {
     IxNodeHandle node = fetch_node(hdr.last_leaf);
-    Iid iid = {
-            .page_no = hdr.last_leaf,
-            .slot_no = node.hdr->num_key
-    };
+    Iid iid = {.page_no = hdr.last_leaf, .slot_no = node.hdr->num_key};
     return iid;
 }
 
 Iid IxIndexHandle::leaf_begin() const {
-    Iid iid = {
-            .page_no = hdr.first_leaf,
-            .slot_no = 0
-    };
+    Iid iid = {.page_no = hdr.first_leaf, .slot_no = 0};
     return iid;
 }
 

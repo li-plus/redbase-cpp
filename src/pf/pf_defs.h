@@ -1,8 +1,8 @@
 #pragma once
 
 #include "defs.h"
-#include <cstdlib>
 #include <cinttypes>
+#include <cstdlib>
 
 constexpr int PAGE_SIZE = 4096;
 constexpr int NUM_CACHE_PAGES = 65536;
@@ -11,9 +11,7 @@ struct PageId {
     int fd;
     int page_no;
 
-    friend bool operator==(const PageId &x, const PageId &y) {
-        return x.fd == y.fd && x.page_no == y.page_no;
-    }
+    friend bool operator==(const PageId &x, const PageId &y) { return x.fd == y.fd && x.page_no == y.page_no; }
 };
 
 struct PageIdHash {

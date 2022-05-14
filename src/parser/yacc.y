@@ -1,5 +1,5 @@
 %{
-#include "ast.h"
+#include "parser/ast.h"
 #include "yacc.tab.h"
 #include <iostream>
 #include <memory>

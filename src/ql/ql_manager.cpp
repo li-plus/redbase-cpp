@@ -1,14 +1,14 @@
-#include "ql_manager.h"
-#include "ql_node.h"
+#include "ql/ql_manager.h"
+#include "ix/ix.h"
+#include "ql/ql_node.h"
 #include "record_printer.h"
 #include "sm/sm.h"
-#include "ix/ix.h"
 
 static TabCol check_column(const std::vector<ColMeta> &all_cols, TabCol target) {
     if (target.tab_name.empty()) {
         // Table name not specified, infer table name from column name
         std::string tab_name;
-        for (auto &col: all_cols) {
+        for (auto &col : all_cols) {
             if (col.name == target.col_name) {
                 if (!tab_name.empty()) {
                     throw AmbiguousColumnError(target.col_name);
@@ -16,7 +16,9 @@ static TabCol check_column(const std::vector<ColMeta> &all_cols, TabCol target) 
                 tab_name = col.tab_name;
             }
         }
-        if (tab_name.empty()) { throw ColumnNotFoundError(target.col_name); }
+        if (tab_name.empty()) {
+            throw ColumnNotFoundError(target.col_name);
+        }
         target.tab_name = tab_name;
     } else {
         // Make sure target column exists
@@ -30,7 +32,7 @@ static TabCol check_column(const std::vector<ColMeta> &all_cols, TabCol target) 
 
 static std::vector<ColMeta> get_all_cols(const std::vector<std::string> &tab_names) {
     std::vector<ColMeta> all_cols;
-    for (auto &sel_tab_name: tab_names) {
+    for (auto &sel_tab_name : tab_names) {
         const auto &sel_tab_cols = SmManager::db.get_table(sel_tab_name).cols;
         all_cols.insert(all_cols.end(), sel_tab_cols.begin(), sel_tab_cols.end());
     }
@@ -42,7 +44,7 @@ static std::vector<Condition> check_where_clause(const std::vector<std::string> 
     auto all_cols = get_all_cols(tab_names);
     // Get raw values in where clause
     std::vector<Condition> res_conds = conds;
-    for (auto &cond: res_conds) {
+    for (auto &cond : res_conds) {
         // Infer table name from column name
         cond.lhs_col = check_column(all_cols, cond.lhs_col);
         if (!cond.is_rhs_val) {
@@ -117,7 +119,7 @@ void QlManager::delete_from(const std::string &tab_name, std::vector<Condition> 
         }
     }
     // Delete each rid from record file and index file
-    for (auto &rid: rids) {
+    for (auto &rid : rids) {
         auto rec = fh->get_record(rid);
         // Delete from index file
         for (size_t col_i = 0; col_i < tab.cols.size(); col_i++) {
@@ -130,14 +132,13 @@ void QlManager::delete_from(const std::string &tab_name, std::vector<Condition> 
     }
 }
 
-void QlManager::update_set(const std::string &tab_name,
-                           std::vector<SetClause> set_clauses,
+void QlManager::update_set(const std::string &tab_name, std::vector<SetClause> set_clauses,
                            std::vector<Condition> conds) {
     TabMeta &tab = SmManager::db.get_table(tab_name);
     // Parse where clause
     conds = check_where_clause({tab_name}, conds);
     // Get raw values in set clause
-    for (auto &set_clause: set_clauses) {
+    for (auto &set_clause : set_clauses) {
         auto lhs_col = tab.get_col(set_clause.lhs.col_name);
         if (lhs_col->type != set_clause.rhs.type) {
             throw IncompatibleTypeError(coltype2str(lhs_col->type), coltype2str(set_clause.rhs.type));
@@ -154,7 +155,7 @@ void QlManager::update_set(const std::string &tab_name,
     auto fh = SmManager::fhs.at(tab_name).get();
     // Get all necessary index files
     std::vector<IxIndexHandle *> ihs(tab.cols.size(), nullptr);
-    for (auto &set_clause: set_clauses) {
+    for (auto &set_clause : set_clauses) {
         auto lhs_col = tab.get_col(set_clause.lhs.col_name);
         if (lhs_col->index) {
             size_t lhs_col_idx = lhs_col - tab.cols.begin();
@@ -164,7 +165,7 @@ void QlManager::update_set(const std::string &tab_name,
         }
     }
     // Update each rid from record file and index file
-    for (auto &rid: rids) {
+    for (auto &rid : rids) {
         auto rec = fh->get_record(rid);
         // Remove old entry from index
         for (size_t i = 0; i < tab.cols.size(); i++) {
@@ -173,7 +174,7 @@ void QlManager::update_set(const std::string &tab_name,
             }
         }
         // Update record in record file
-        for (auto &set_clause: set_clauses) {
+        for (auto &set_clause : set_clauses) {
             auto lhs_col = tab.get_col(set_clause.lhs.col_name);
             memcpy(rec->data + lhs_col->offset, set_clause.rhs.raw->data, lhs_col->len);
         }
@@ -187,8 +188,7 @@ void QlManager::update_set(const std::string &tab_name,
     }
 }
 
-static std::vector<Condition> pop_conds(std::vector<Condition> &conds,
-                                        const std::vector<std::string> &tab_names) {
+static std::vector<Condition> pop_conds(std::vector<Condition> &conds, const std::vector<std::string> &tab_names) {
     auto has_tab = [&](const std::string &tab_name) {
         return std::find(tab_names.begin(), tab_names.end(), tab_name) != tab_names.end();
     };
@@ -205,20 +205,19 @@ static std::vector<Condition> pop_conds(std::vector<Condition> &conds,
     return solved_conds;
 }
 
-void QlManager::select_from(std::vector<TabCol> sel_cols,
-                            const std::vector<std::string> &tab_names,
+void QlManager::select_from(std::vector<TabCol> sel_cols, const std::vector<std::string> &tab_names,
                             std::vector<Condition> conds) {
     // Parse selector
     auto all_cols = get_all_cols(tab_names);
     if (sel_cols.empty()) {
         // select all columns
-        for (auto &col: all_cols) {
+        for (auto &col : all_cols) {
             TabCol sel_col = {.tab_name = col.tab_name, .col_name = col.name};
             sel_cols.push_back(sel_col);
         }
     } else {
         // infer table name from column name
-        for (auto &sel_col: sel_cols) {
+        for (auto &sel_col : sel_cols) {
             sel_col = check_column(all_cols, sel_col);
         }
     }
@@ -232,14 +231,14 @@ void QlManager::select_from(std::vector<TabCol> sel_cols,
     }
     assert(conds.empty());
     std::unique_ptr<QlNode> query_plan = std::move(tab_nodes.back());
-    for (size_t i = tab_names.size() - 2; i != (size_t) -1; i--) {
+    for (size_t i = tab_names.size() - 2; i != (size_t)-1; i--) {
         query_plan = std::make_unique<QlNodeJoin>(std::move(tab_nodes[i]), std::move(query_plan));
     }
     query_plan = std::make_unique<QlNodeProj>(std::move(query_plan), sel_cols);
     // Column titles
     std::vector<std::string> captions;
     captions.reserve(sel_cols.size());
-    for (auto &sel_col: sel_cols) {
+    for (auto &sel_col : sel_cols) {
         captions.push_back(sel_col.col_name);
     }
     // Print header
@@ -252,15 +251,15 @@ void QlManager::select_from(std::vector<TabCol> sel_cols,
     for (query_plan->begin(); !query_plan->is_end(); query_plan->next()) {
         auto rec = query_plan->rec();
         std::vector<std::string> columns;
-        for (auto &col: query_plan->cols()) {
+        for (auto &col : query_plan->cols()) {
             std::string col_str;
             uint8_t *rec_buf = rec->data + col.offset;
             if (col.type == TYPE_INT) {
-                col_str = std::to_string(*(int *) rec_buf);
+                col_str = std::to_string(*(int *)rec_buf);
             } else if (col.type == TYPE_FLOAT) {
-                col_str = std::to_string(*(float *) rec_buf);
+                col_str = std::to_string(*(float *)rec_buf);
             } else if (col.type == TYPE_STRING) {
-                col_str = std::string((char *) rec_buf, col.len);
+                col_str = std::string((char *)rec_buf, col.len);
                 col_str.resize(strlen(col_str.c_str()));
             }
             columns.push_back(col_str);

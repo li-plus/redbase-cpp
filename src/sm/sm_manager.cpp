@@ -1,10 +1,10 @@
-#include "sm_manager.h"
-#include "rm/rm.h"
+#include "sm/sm_manager.h"
 #include "ix/ix.h"
 #include "record_printer.h"
+#include "rm/rm.h"
+#include <fstream>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <fstream>
 
 DbMeta SmManager::db;
 std::map<std::string, std::unique_ptr<RmFileHandle>> SmManager::fhs;
@@ -60,7 +60,7 @@ void SmManager::open_db(const std::string &db_name) {
     std::ifstream ifs(DB_META_NAME);
     ifs >> db;
     // Open all record files & index files
-    for (auto &entry: db.tabs) {
+    for (auto &entry : db.tabs) {
         auto &tab = entry.second;
         fhs[tab.name] = RmManager::open_file(tab.name);
         for (size_t i = 0; i < tab.cols.size(); i++) {
@@ -81,12 +81,12 @@ void SmManager::close_db() {
     db.name.clear();
     db.tabs.clear();
     // Close all record files
-    for (auto &entry: fhs) {
+    for (auto &entry : fhs) {
         RmManager::close_file(entry.second.get());
     }
     fhs.clear();
     // Close all index files
-    for (auto &entry: ihs) {
+    for (auto &entry : ihs) {
         IxManager::close_index(entry.second.get());
     }
     ihs.clear();
@@ -100,7 +100,7 @@ void SmManager::show_tables() {
     printer.print_separator();
     printer.print_record({"Tables"});
     printer.print_separator();
-    for (auto &entry: db.tabs) {
+    for (auto &entry : db.tabs) {
         auto &tab = entry.second;
         printer.print_record({tab.name});
     }
@@ -117,12 +117,8 @@ void SmManager::desc_table(const std::string &tab_name) {
     printer.print_record(captions);
     printer.print_separator();
     // Print fields
-    for (auto &col: tab.cols) {
-        std::vector<std::string> field_info = {
-                col.name,
-                coltype2str(col.type),
-                col.index ? "YES" : "NO"
-        };
+    for (auto &col : tab.cols) {
+        std::vector<std::string> field_info = {col.name, coltype2str(col.type), col.index ? "YES" : "NO"};
         printer.print_record(field_info);
     }
     // Print footer
@@ -137,15 +133,13 @@ void SmManager::create_table(const std::string &tab_name, const std::vector<ColD
     int curr_offset = 0;
     TabMeta tab;
     tab.name = tab_name;
-    for (auto &col_def: col_defs) {
-        ColMeta col = {
-                .tab_name = tab_name,
-                .name = col_def.name,
-                .type = col_def.type,
-                .len = col_def.len,
-                .offset = curr_offset,
-                .index = false
-        };
+    for (auto &col_def : col_defs) {
+        ColMeta col = {.tab_name = tab_name,
+                       .name = col_def.name,
+                       .type = col_def.type,
+                       .len = col_def.len,
+                       .offset = curr_offset,
+                       .index = false};
         curr_offset += col_def.len;
         tab.cols.push_back(col);
     }
@@ -163,7 +157,7 @@ void SmManager::drop_table(const std::string &tab_name) {
     RmManager::close_file(fhs.at(tab_name).get());
     RmManager::destroy_file(tab_name);
     // Close & destroy index file
-    for (auto &col: tab.cols) {
+    for (auto &col : tab.cols) {
         if (col.index) {
             SmManager::drop_index(tab_name, col.name);
         }

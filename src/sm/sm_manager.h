@@ -1,18 +1,18 @@
 #pragma once
 
-#include "sm_meta.h"
-#include "sm_defs.h"
 #include "ix/ix.h"
 #include "rm/rm.h"
+#include "sm/sm_defs.h"
+#include "sm/sm_meta.h"
 
 struct ColDef {
-    std::string name;   // Column name
-    ColType type;       // Type of column
-    int len;            // Length of column
+    std::string name; // Column name
+    ColType type;     // Type of column
+    int len;          // Length of column
 };
 
 class SmManager {
-public:
+  public:
     static DbMeta db;
     static std::map<std::string, std::unique_ptr<RmFileHandle>> fhs;
     static std::map<std::string, std::unique_ptr<IxIndexHandle>> ihs;

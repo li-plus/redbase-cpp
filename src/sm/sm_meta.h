@@ -1,13 +1,12 @@
 #pragma once
 
-#include "sm_defs.h"
 #include "error.h"
+#include "sm/sm_defs.h"
+#include <algorithm>
 #include <iostream>
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
-#include <algorithm>
-
 
 struct ColMeta {
     std::string tab_name;
@@ -18,11 +17,7 @@ struct ColMeta {
     bool index;
 
     friend std::ostream &operator<<(std::ostream &os, const ColMeta &col) {
-        return os << col.tab_name << ' '
-                  << col.name << ' '
-                  << col.type << ' '
-                  << col.len << ' '
-                  << col.offset << ' '
+        return os << col.tab_name << ' ' << col.name << ' ' << col.type << ' ' << col.len << ' ' << col.offset << ' '
                   << col.index;
     }
 
@@ -36,24 +31,21 @@ struct TabMeta {
     std::vector<ColMeta> cols;
 
     bool is_col(const std::string &col_name) const {
-        auto pos = std::find_if(cols.begin(), cols.end(), [&](const ColMeta &col) {
-            return col.name == col_name;
-        });
+        auto pos = std::find_if(cols.begin(), cols.end(), [&](const ColMeta &col) { return col.name == col_name; });
         return pos != cols.end();
     }
 
     std::vector<ColMeta>::iterator get_col(const std::string &col_name) {
-        auto pos = std::find_if(cols.begin(), cols.end(), [&](const ColMeta &col) {
-            return col.name == col_name;
-        });
-        if (pos == cols.end()) { throw ColumnNotFoundError(col_name); }
+        auto pos = std::find_if(cols.begin(), cols.end(), [&](const ColMeta &col) { return col.name == col_name; });
+        if (pos == cols.end()) {
+            throw ColumnNotFoundError(col_name);
+        }
         return pos;
     }
 
     friend std::ostream &operator<<(std::ostream &os, const TabMeta &tab) {
-        os << tab.name << '\n'
-           << tab.cols.size() << '\n';
-        for (auto &col: tab.cols) {
+        os << tab.name << '\n' << tab.cols.size() << '\n';
+        for (auto &col : tab.cols) {
             os << col << '\n';
         }
         return os;
@@ -75,9 +67,7 @@ struct DbMeta {
     std::string name;
     std::map<std::string, TabMeta> tabs;
 
-    bool is_table(const std::string &tab_name) const {
-        return tabs.find(tab_name) != tabs.end();
-    }
+    bool is_table(const std::string &tab_name) const { return tabs.find(tab_name) != tabs.end(); }
 
     TabMeta &get_table(const std::string &tab_name) {
         auto pos = tabs.find(tab_name);
@@ -88,9 +78,8 @@ struct DbMeta {
     }
 
     friend std::ostream &operator<<(std::ostream &os, const DbMeta &db_meta) {
-        os << db_meta.name << '\n'
-           << db_meta.tabs.size() << '\n';
-        for (auto &entry: db_meta.tabs) {
+        os << db_meta.name << '\n' << db_meta.tabs.size() << '\n';
+        for (auto &entry : db_meta.tabs) {
             os << entry.second << '\n';
         }
         return os;

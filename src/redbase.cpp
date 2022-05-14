@@ -1,13 +1,11 @@
 #include "interp.h"
-#include <readline/readline.h>
 #include <readline/history.h>
+#include <readline/readline.h>
 #include <signal.h>
 
 static bool should_exit = false;
 
-void sigint_handler(int signo) {
-    should_exit = true;
-}
+void sigint_handler(int signo) { should_exit = true; }
 
 int main(int argc, char **argv) {
     if (argc != 2) {
@@ -45,7 +43,9 @@ int main(int argc, char **argv) {
             std::string line = line_read;
             free(line_read);
 
-            if (should_exit) { break; }
+            if (should_exit) {
+                break;
+            }
 
             if (!line.empty()) {
                 add_history(line.c_str());

@@ -1,4 +1,10 @@
-#include "rm_file_handle.h"
+#include "rm/rm_file_handle.h"
+#include <cassert>
+
+bool RmFileHandle::is_record(const Rid &rid) const {
+    RmPageHandle ph = fetch_page(rid.page_no);
+    return Bitmap::test(ph.bitmap, rid.slot_no);
+}
 
 std::unique_ptr<RmRecord> RmFileHandle::get_record(const Rid &rid) const {
     auto record = std::make_unique<RmRecord>(hdr.record_size);

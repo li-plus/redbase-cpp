@@ -28,7 +28,7 @@ Then build the project and make optional unittest.
 
 ```sh
 mkdir -p build/ && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake ..
 make -j
 make test   # optional
 ```

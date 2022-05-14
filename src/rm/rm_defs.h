@@ -1,7 +1,7 @@
 #pragma once
 
-#include "pf/pf.h"
 #include "defs.h"
+#include "pf/pf.h"
 
 constexpr int RM_NO_PAGE = -1;
 constexpr int RM_FILE_HDR_PAGE = 0;
@@ -34,7 +34,5 @@ struct RmRecord {
         data = new uint8_t[size_];
     }
 
-    ~RmRecord() {
-        delete[] data;
-    }
+    ~RmRecord() { delete[] data; }
 };

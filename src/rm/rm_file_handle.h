@@ -1,7 +1,7 @@
 #pragma once
 
-#include "rm_defs.h"
-#include "bitmap.h"
+#include "rm/bitmap.h"
+#include "rm/rm_defs.h"
 #include <memory>
 
 struct RmPageHandle {
@@ -12,36 +12,31 @@ struct RmPageHandle {
     const RmFileHdr *fhdr;
 
     RmPageHandle(const RmFileHdr *fhdr_, Page *page_) : page(page_), fhdr(fhdr_) {
-        hdr = (RmPageHdr *) page->buf;
+        hdr = (RmPageHdr *)page->buf;
         bitmap = page->buf + sizeof(RmPageHdr);
         slots = bitmap + fhdr->bitmap_size;
     }
 
-    uint8_t *get_slot(int slot_no) const {
-        return slots + slot_no * fhdr->record_size;
-    }
+    uint8_t *get_slot(int slot_no) const { return slots + slot_no * fhdr->record_size; }
 };
 
 class RmFileHandle {
     friend class RmScan;
 
-public:
+  public:
     RmFileHdr hdr;
     int fd;
 
     RmFileHandle(int fd_) {
         fd = fd_;
-        PfPager::read_page(fd, RM_FILE_HDR_PAGE, (uint8_t *) &hdr, sizeof(hdr));
+        PfPager::read_page(fd, RM_FILE_HDR_PAGE, (uint8_t *)&hdr, sizeof(hdr));
     }
 
     RmFileHandle(const RmFileHandle &other) = delete;
 
     RmFileHandle &operator=(const RmFileHandle &other) = delete;
 
-    bool is_record(const Rid &rid) const {
-        RmPageHandle ph = fetch_page(rid.page_no);
-        return Bitmap::test(ph.bitmap, rid.slot_no);
-    }
+    bool is_record(const Rid &rid) const;
 
     std::unique_ptr<RmRecord> get_record(const Rid &rid) const;
 
@@ -51,7 +46,7 @@ public:
 
     void update_record(const Rid &rid, uint8_t *buf);
 
-private:
+  private:
     RmPageHandle fetch_page(int page_no) const;
 
     RmPageHandle create_page();

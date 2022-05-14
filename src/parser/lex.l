@@ -11,7 +11,7 @@
 %option bison-locations
 
 %{
-#include "ast.h"
+#include "parser/ast.h"
 #include "yacc.tab.h"
 #include <iostream>
 

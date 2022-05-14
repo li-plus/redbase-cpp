@@ -1,5 +1,6 @@
-#include "rm_scan.h"
-#include "rm_file_handle.h"
+#include "rm/rm_scan.h"
+#include "rm/rm_file_handle.h"
+#include <cassert>
 
 RmScan::RmScan(const RmFileHandle *fh) : _fh(fh) {
     _rid = {.page_no = RM_FIRST_RECORD_PAGE, .slot_no = -1};

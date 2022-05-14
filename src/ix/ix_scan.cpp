@@ -1,5 +1,6 @@
-#include "ix_scan.h"
-#include "ix_index_handle.h"
+#include "ix/ix_scan.h"
+#include "ix/ix_index_handle.h"
+#include <cassert>
 
 void IxScan::next() {
     assert(!is_end());
@@ -15,6 +16,4 @@ void IxScan::next() {
     }
 }
 
-Rid IxScan::rid() const {
-    return _ih->get_rid(_iid);
-}
+Rid IxScan::rid() const { return _ih->get_rid(_iid); }
