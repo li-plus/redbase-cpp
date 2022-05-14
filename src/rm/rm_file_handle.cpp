@@ -26,7 +26,7 @@ Rid RmFileHandle::insert_record(uint8_t *buf) {
     // update bitmap
     Bitmap::set(ph.bitmap, slot_no);
     // update page header
-    PfPager::mark_dirty(ph.page);
+    ph.page->mark_dirty();
     ph.hdr->num_records++;
     if (ph.hdr->num_records == hdr.num_records_per_page) {
         // page is full
@@ -44,7 +44,7 @@ void RmFileHandle::delete_record(const Rid &rid) {
     if (!Bitmap::test(ph.bitmap, rid.slot_no)) {
         throw RecordNotFoundError(rid.page_no, rid.slot_no);
     }
-    PfPager::mark_dirty(ph.page);
+    ph.page->mark_dirty();
     if (ph.hdr->num_records == hdr.num_records_per_page) {
         // originally full, now available for new record
         release_page(ph);
@@ -58,7 +58,7 @@ void RmFileHandle::update_record(const Rid &rid, uint8_t *buf) {
     if (!Bitmap::test(ph.bitmap, rid.slot_no)) {
         throw RecordNotFoundError(rid.page_no, rid.slot_no);
     }
-    PfPager::mark_dirty(ph.page);
+    ph.page->mark_dirty();
     uint8_t *slot = ph.get_slot(rid.slot_no);
     memcpy(slot, buf, hdr.record_size);
 }

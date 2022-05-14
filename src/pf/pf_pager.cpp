@@ -32,10 +32,12 @@ void PfPager::write_page(int fd, int page_no, const uint8_t *buf, int num_bytes)
 }
 
 Page *PfPager::create_page(int fd, int page_no) {
-    Page *page = get_page(fd, page_no, false);
-    mark_dirty(page);
+    Page *page = get_page<false>(fd, page_no);
+    page->mark_dirty();
     return page;
 }
+
+Page *PfPager::fetch_page(int fd, int page_no) { return get_page<true>(fd, page_no); }
 
 void PfPager::flush_file(int fd) {
     auto it_page = _busy_pages.begin();
@@ -55,7 +57,8 @@ void PfPager::force_page(Page *page) {
     }
 }
 
-Page *PfPager::get_page(int fd, int page_no, bool exists) {
+template <bool EXISTS>
+Page *PfPager::get_page(int fd, int page_no) {
     Page *page;
     PageId page_id = {.fd = fd, .page_no = page_no};
     auto it_page = _hashmap.find(page_id);
@@ -64,21 +67,17 @@ Page *PfPager::get_page(int fd, int page_no, bool exists) {
         if (_free_pages.empty()) {
             // Cache is full. Need to flush a page to disk.
             assert(!_busy_pages.empty());
-            page = _busy_pages.back();
-            force_page(page);
-            _busy_pages.pop_back();
-            _hashmap.erase(page->id);
+            force_page(_busy_pages.back());
+            _busy_pages.splice(_busy_pages.begin(), _busy_pages, --_busy_pages.end());
         } else {
             // Allocate from free pages.
-            page = *_free_pages.begin();
-            _free_pages.pop_front();
+            _busy_pages.splice(_busy_pages.begin(), _free_pages, _free_pages.begin());
+            _hashmap[page_id] = _busy_pages.begin();
         }
-        page->id = {.fd = fd, .page_no = page_no};
+        page = _busy_pages.front();
+        page->id = page_id;
         page->is_dirty = false;
-        // Push to the list front
-        _busy_pages.push_front(page);
-        _hashmap[page->id] = _busy_pages.begin();
-        if (exists) {
+        if (EXISTS) {
             read_page(fd, page_no, page->buf, PAGE_SIZE);
         }
     } else {
@@ -91,18 +90,14 @@ Page *PfPager::get_page(int fd, int page_no, bool exists) {
 
 void PfPager::access(Page *page) {
     assert(page_in_cache(page->id));
-    auto it = _hashmap[page->id];
-    _busy_pages.erase(it);
-    _busy_pages.push_front(page);
-    _hashmap[page->id] = _busy_pages.begin();
+    _busy_pages.splice(_busy_pages.begin(), _busy_pages, _hashmap[page->id]);
 }
 
 void PfPager::flush_page(Page *page) {
     assert(page_in_cache(page->id));
     auto it = _hashmap[page->id];
     force_page(page);
-    _busy_pages.erase(it);
-    _free_pages.push_front(page);
+    _free_pages.splice(_free_pages.begin(), _busy_pages, it);
     _hashmap.erase(page->id);
     assert(!page_in_cache(page->id));
 }

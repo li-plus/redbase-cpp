@@ -14,12 +14,17 @@ struct PageId {
     friend bool operator==(const PageId &x, const PageId &y) { return x.fd == y.fd && x.page_no == y.page_no; }
 };
 
-struct PageIdHash {
-    size_t operator()(const PageId &x) const { return (x.fd << 16) | x.page_no; }
+namespace std {
+template <>
+struct hash<PageId> {
+    size_t operator()(const PageId &pid) const noexcept { return (pid.fd << 16) | pid.page_no; }
 };
+} // namespace std
 
 struct Page {
     PageId id;
     uint8_t *buf;
     bool is_dirty;
+
+    void mark_dirty() { is_dirty = true; }
 };

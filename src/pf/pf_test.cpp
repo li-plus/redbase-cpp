@@ -132,7 +132,7 @@ class PfTest : public ::testing::Test {
             rand_buf(PAGE_SIZE, init_buf);
             memcpy(page->buf, init_buf, PAGE_SIZE);
             memcpy(mock_buf, init_buf, PAGE_SIZE);
-            PfPager::mark_dirty(page);
+            page->mark_dirty();
 
             // flush
             if (rand() % 10 == 0) {

@@ -19,9 +19,7 @@ class PfPager {
 
     Page *create_page(int fd, int page_no);
 
-    Page *fetch_page(int fd, int page_no) { return get_page(fd, page_no, true); }
-
-    static void mark_dirty(Page *page) { page->is_dirty = true; }
+    Page *fetch_page(int fd, int page_no);
 
     void flush_file(int fd);
 
@@ -32,7 +30,8 @@ class PfPager {
 
     // Get the page from memory corresponding to the disk page.
     // If the page is not in memory, allocate a page and read the disk.
-    Page *get_page(int fd, int page_no, bool exists);
+    template <bool EXISTS>
+    Page *get_page(int fd, int page_no);
 
     void access(Page *page);
 
@@ -43,7 +42,7 @@ class PfPager {
   private:
     uint8_t _cache[NUM_CACHE_PAGES * PAGE_SIZE];
     Page _pages[NUM_CACHE_PAGES];
-    std::unordered_map<PageId, std::list<Page *>::iterator, PageIdHash> _hashmap;
+    std::unordered_map<PageId, std::list<Page *>::iterator> _hashmap;
     std::list<Page *> _busy_pages;
     std::list<Page *> _free_pages;
 };
