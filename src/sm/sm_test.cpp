@@ -18,9 +18,8 @@ TEST(sm, basic) {
 
     // Open database
     SmManager::open_db(db);
-    std::vector<ColDef> col_defs = {{.name = "a", .type = TYPE_INT, .len = 4},
-                                    {.name = "b", .type = TYPE_FLOAT, .len = 4},
-                                    {.name = "c", .type = TYPE_STRING, .len = 256}};
+    std::vector<ColDef> col_defs = {ColDef("a", TYPE_INT, 4), ColDef("b", TYPE_FLOAT, 4),
+                                    ColDef("c", TYPE_STRING, 256)};
     // Create table 1
     SmManager::create_table(tab1, col_defs);
     // Cannot re-create table

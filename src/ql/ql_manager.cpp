@@ -212,7 +212,7 @@ void QlManager::select_from(std::vector<TabCol> sel_cols, const std::vector<std:
     if (sel_cols.empty()) {
         // select all columns
         for (auto &col : all_cols) {
-            TabCol sel_col = {.tab_name = col.tab_name, .col_name = col.name};
+            TabCol sel_col(col.tab_name, col.name);
             sel_cols.push_back(sel_col);
         }
     } else {

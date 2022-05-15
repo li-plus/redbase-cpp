@@ -41,9 +41,8 @@ class Interp {
             std::vector<ColDef> col_defs;
             for (auto &field : x->fields) {
                 if (auto sv_col_def = std::dynamic_pointer_cast<ast::ColDef>(field)) {
-                    ColDef col_def = {.name = sv_col_def->col_name,
-                                      .type = interp_sv_type(sv_col_def->type_len->type),
-                                      .len = sv_col_def->type_len->len};
+                    ColDef col_def(sv_col_def->col_name, interp_sv_type(sv_col_def->type_len->type),
+                                   sv_col_def->type_len->len);
                     col_defs.push_back(col_def);
                 } else {
                     throw InternalError("Unexpected field type");
@@ -69,8 +68,7 @@ class Interp {
             std::vector<Condition> conds = interp_where_clause(x->conds);
             std::vector<SetClause> set_clauses;
             for (auto &sv_set_clause : x->set_clauses) {
-                SetClause set_clause = {.lhs = {.tab_name = "", .col_name = sv_set_clause->col_name},
-                                        .rhs = interp_sv_value(sv_set_clause->val)};
+                SetClause set_clause(TabCol("", sv_set_clause->col_name), interp_sv_value(sv_set_clause->val));
                 set_clauses.push_back(set_clause);
             }
             QlManager::update_set(x->tab_name, set_clauses, conds);
@@ -78,7 +76,7 @@ class Interp {
             std::vector<Condition> conds = interp_where_clause(x->conds);
             std::vector<TabCol> sel_cols;
             for (auto &sv_sel_col : x->cols) {
-                TabCol sel_col = {.tab_name = sv_sel_col->tab_name, .col_name = sv_sel_col->col_name};
+                TabCol sel_col(sv_sel_col->tab_name, sv_sel_col->col_name);
                 sel_cols.push_back(sel_col);
             }
             QlManager::select_from(sel_cols, x->tabs, conds);
@@ -120,14 +118,14 @@ class Interp {
         std::vector<Condition> conds;
         for (auto &expr : sv_conds) {
             Condition cond;
-            cond.lhs_col = {.tab_name = expr->lhs->tab_name, .col_name = expr->lhs->col_name};
+            cond.lhs_col = TabCol(expr->lhs->tab_name, expr->lhs->col_name);
             cond.op = interp_sv_comp_op(expr->op);
             if (auto rhs_val = std::dynamic_pointer_cast<ast::Value>(expr->rhs)) {
                 cond.is_rhs_val = true;
                 cond.rhs_val = interp_sv_value(rhs_val);
             } else if (auto rhs_col = std::dynamic_pointer_cast<ast::Col>(expr->rhs)) {
                 cond.is_rhs_val = false;
-                cond.rhs_col = {.tab_name = rhs_col->tab_name, .col_name = rhs_col->col_name};
+                cond.rhs_col = TabCol(rhs_col->tab_name, rhs_col->col_name);
             }
             conds.push_back(cond);
         }

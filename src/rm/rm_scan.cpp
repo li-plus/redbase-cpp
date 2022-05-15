@@ -3,7 +3,7 @@
 #include <cassert>
 
 RmScan::RmScan(const RmFileHandle *fh) : _fh(fh) {
-    _rid = {.page_no = RM_FIRST_RECORD_PAGE, .slot_no = -1};
+    _rid = Rid(RM_FIRST_RECORD_PAGE, -1);
     next();
 }
 

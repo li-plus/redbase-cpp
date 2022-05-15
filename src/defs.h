@@ -20,8 +20,10 @@ struct Rid {
     int page_no;
     int slot_no;
 
-    friend bool operator==(const Rid &x, const Rid &y) { return x.page_no == y.page_no && x.slot_no == y.slot_no; }
+    Rid() = default;
+    Rid(int page_no_, int slot_no_) : page_no(page_no_), slot_no(slot_no_) {}
 
+    friend bool operator==(const Rid &x, const Rid &y) { return x.page_no == y.page_no && x.slot_no == y.slot_no; }
     friend bool operator!=(const Rid &x, const Rid &y) { return !(x == y); }
 };
 

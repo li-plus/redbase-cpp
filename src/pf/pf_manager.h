@@ -9,9 +9,6 @@
 #include <unordered_map>
 
 class PfManager {
-    static std::unordered_map<std::string, int> _path2fd;
-    static std::unordered_map<int, std::string> _fd2path;
-
   public:
     static PfPager pager;
 
@@ -24,4 +21,8 @@ class PfManager {
     static int open_file(const std::string &path);
 
     static void close_file(int fd);
+
+  private:
+    static std::unordered_map<std::string, int> _path2fd;
+    static std::unordered_map<int, std::string> _fd2path;
 };

@@ -96,7 +96,7 @@ class IxTest : public ::testing::Test {
         std::multimap<int, Rid> mock;
         for (int i = 0; i < round; i++) {
             int rand_key = rand() % round;
-            Rid rand_val = {.page_no = rand(), .slot_no = rand()};
+            Rid rand_val(rand(), rand());
             ih->insert_entry((const uint8_t *)&rand_key, rand_val);
             mock.insert(std::make_pair(rand_key, rand_val));
             if (round % 500 == 0) {
@@ -144,7 +144,7 @@ class IxTest : public ::testing::Test {
             if (mock.empty() || dice < insert_prob) {
                 // Insert
                 int rand_key = rand() % round;
-                Rid rand_val = {.page_no = rand(), .slot_no = rand()};
+                Rid rand_val(rand(), rand());
                 ih->insert_entry((const uint8_t *)&rand_key, rand_val);
                 mock.insert(std::make_pair(rand_key, rand_val));
                 add_cnt++;

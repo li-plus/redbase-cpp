@@ -56,13 +56,14 @@ int PfManager::open_file(const std::string &path) {
 }
 
 void PfManager::close_file(int fd) {
-    if (!_fd2path.count(fd)) {
+    auto pos = _fd2path.find(fd);
+    if (pos == _fd2path.end()) {
         throw FileNotOpenError(fd);
     }
     pager.flush_file(fd);
-    std::string filename = _fd2path[fd];
+    const std::string &filename = pos->second;
     _path2fd.erase(filename);
-    _fd2path.erase(fd);
+    _fd2path.erase(pos);
     if (close(fd) != 0) {
         throw UnixError();
     }

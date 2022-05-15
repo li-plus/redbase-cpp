@@ -13,7 +13,7 @@ std::vector<ColMeta>::const_iterator QlNode::get_col(const std::vector<ColMeta> 
 std::map<TabCol, Value> QlNode::rec2dict(const std::vector<ColMeta> &cols, const RmRecord *rec) {
     std::map<TabCol, Value> rec_dict;
     for (auto &col : cols) {
-        TabCol key = {.tab_name = col.tab_name, .col_name = col.name};
+        TabCol key(col.tab_name, col.name);
         Value val;
         uint8_t *val_buf = rec->data + col.offset;
         if (col.type == TYPE_INT) {
