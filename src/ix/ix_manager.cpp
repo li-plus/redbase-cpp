@@ -25,46 +25,20 @@ void IxManager::create_index(const std::string &filename, int index_no, ColType 
     int key_offset = sizeof(IxPageHdr);
     int rid_offset = key_offset + (btree_order + 1) * col_len;
 
-    IxFileHdr fhdr = {
-        .first_free = IX_NO_PAGE,
-        .num_pages = IX_INIT_NUM_PAGES,
-        .root_page = IX_INIT_ROOT_PAGE,
-        .col_type = col_type,
-        .col_len = col_len,
-        .btree_order = btree_order,
-        .key_offset = key_offset,
-        .rid_offset = rid_offset,
-        .first_leaf = IX_INIT_ROOT_PAGE,
-        .last_leaf = IX_INIT_ROOT_PAGE,
-    };
+    IxFileHdr fhdr(IX_NO_PAGE, IX_INIT_NUM_PAGES, IX_INIT_ROOT_PAGE, col_type, col_len, btree_order, key_offset,
+                   rid_offset, IX_INIT_ROOT_PAGE, IX_INIT_ROOT_PAGE);
     static uint8_t page_buf[PAGE_SIZE];
     PfPager::write_page(fd, IX_FILE_HDR_PAGE, (const uint8_t *)&fhdr, sizeof(fhdr));
     // Create leaf list header page and write to file
     {
         auto phdr = (IxPageHdr *)page_buf;
-        *phdr = {
-            .next_free = IX_NO_PAGE,
-            .parent = IX_NO_PAGE,
-            .num_key = 0,
-            .num_child = 0,
-            .is_leaf = true,
-            .prev_leaf = IX_INIT_ROOT_PAGE,
-            .next_leaf = IX_INIT_ROOT_PAGE,
-        };
+        *phdr = IxPageHdr(IX_NO_PAGE, IX_NO_PAGE, 0, 0, true, IX_INIT_ROOT_PAGE, IX_INIT_ROOT_PAGE);
         PfPager::write_page(fd, IX_LEAF_HEADER_PAGE, page_buf, PAGE_SIZE);
     }
     // Create root node and write to file
     {
         auto phdr = (IxPageHdr *)page_buf;
-        *phdr = {
-            .next_free = IX_NO_PAGE,
-            .parent = IX_NO_PAGE,
-            .num_key = 0,
-            .num_child = 0,
-            .is_leaf = true,
-            .prev_leaf = IX_LEAF_HEADER_PAGE,
-            .next_leaf = IX_LEAF_HEADER_PAGE,
-        };
+        *phdr = IxPageHdr(IX_NO_PAGE, IX_NO_PAGE, 0, 0, true, IX_LEAF_HEADER_PAGE, IX_LEAF_HEADER_PAGE);
         // Must write PAGE_SIZE here in case of future fetch_node()
         PfPager::write_page(fd, IX_INIT_ROOT_PAGE, page_buf, PAGE_SIZE);
     }

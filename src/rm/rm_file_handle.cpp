@@ -35,7 +35,7 @@ Rid RmFileHandle::insert_record(uint8_t *buf) {
     // copy record data into slot
     uint8_t *slot = ph.get_slot(slot_no);
     memcpy(slot, buf, hdr.record_size);
-    Rid rid{.page_no = ph.page->id.page_no, .slot_no = slot_no};
+    Rid rid(ph.page->id.page_no, slot_no);
     return rid;
 }
 

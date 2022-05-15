@@ -9,6 +9,9 @@ struct ColDef {
     std::string name; // Column name
     ColType type;     // Type of column
     int len;          // Length of column
+
+    ColDef() = default;
+    ColDef(std::string name_, ColType type_, int len_) : name(std::move(name_)), type(type_), len(len_) {}
 };
 
 class SmManager {

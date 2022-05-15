@@ -60,20 +60,21 @@ void PfPager::force_page(Page *page) {
 template <bool EXISTS>
 Page *PfPager::get_page(int fd, int page_no) {
     Page *page;
-    PageId page_id = {.fd = fd, .page_no = page_no};
-    auto it_page = _hashmap.find(page_id);
-    if (it_page == _hashmap.end()) {
+    PageId page_id(fd, page_no);
+    auto map_it = _busy_map.find(page_id);
+    if (map_it == _busy_map.end()) {
         // Page is not in memory (i.e. on disk). Allocate new cache page for it.
         if (_free_pages.empty()) {
             // Cache is full. Need to flush a page to disk.
             assert(!_busy_pages.empty());
             force_page(_busy_pages.back());
+            _busy_map.erase(_busy_pages.back()->id);
             _busy_pages.splice(_busy_pages.begin(), _busy_pages, --_busy_pages.end());
         } else {
-            // Allocate from free pages.
+            // Cache is not full. Allocate from free pages.
             _busy_pages.splice(_busy_pages.begin(), _free_pages, _free_pages.begin());
-            _hashmap[page_id] = _busy_pages.begin();
         }
+        _busy_map[page_id] = _busy_pages.begin();
         page = _busy_pages.front();
         page->id = page_id;
         page->is_dirty = false;
@@ -82,24 +83,25 @@ Page *PfPager::get_page(int fd, int page_no) {
         }
     } else {
         // Page is in memory
-        page = *it_page->second;
+        page = *map_it->second;
         access(page);
     }
     return page;
 }
 
 void PfPager::access(Page *page) {
-    assert(page_in_cache(page->id));
-    _busy_pages.splice(_busy_pages.begin(), _busy_pages, _hashmap[page->id]);
+    assert(in_cache(page->id));
+    _busy_pages.splice(_busy_pages.begin(), _busy_pages, _busy_map[page->id]);
 }
 
 void PfPager::flush_page(Page *page) {
-    assert(page_in_cache(page->id));
-    auto it = _hashmap[page->id];
+    assert(in_cache(page->id));
+    auto map_it = _busy_map.find(page->id);
+    auto busy_it = map_it->second;
     force_page(page);
-    _free_pages.splice(_free_pages.begin(), _busy_pages, it);
-    _hashmap.erase(page->id);
-    assert(!page_in_cache(page->id));
+    _free_pages.splice(_free_pages.begin(), _busy_pages, busy_it);
+    _busy_map.erase(map_it);
+    assert(!in_cache(page->id));
 }
 
 void PfPager::flush_all() {
@@ -108,5 +110,5 @@ void PfPager::flush_all() {
     }
     _free_pages.insert(_free_pages.end(), _busy_pages.begin(), _busy_pages.end());
     _busy_pages.clear();
-    _hashmap.clear();
+    _busy_map.clear();
 }

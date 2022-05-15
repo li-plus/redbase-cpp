@@ -12,6 +12,10 @@ struct TabCol {
     std::string tab_name;
     std::string col_name;
 
+    TabCol() = default;
+    TabCol(std::string tab_name_, std::string col_name_)
+        : tab_name(std::move(tab_name_)), col_name(std::move(col_name_)) {}
+
     friend bool operator<(const TabCol &x, const TabCol &y) {
         return std::make_pair(x.tab_name, x.col_name) < std::make_pair(y.tab_name, y.col_name);
     }
@@ -74,6 +78,9 @@ struct Condition {
 struct SetClause {
     TabCol lhs;
     Value rhs;
+
+    SetClause() = default;
+    SetClause(TabCol lhs_, Value rhs_) : lhs(std::move(lhs_)), rhs(std::move(rhs_)) {}
 };
 
 class QlManager {

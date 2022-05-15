@@ -16,6 +16,11 @@ struct ColMeta {
     int offset;
     bool index;
 
+    ColMeta() = default;
+    ColMeta(std::string tab_name_, std::string name_, ColType type_, int len_, int offset_, bool index_)
+        : tab_name(std::move(tab_name_)), name(std::move(name_)), type(type_), len(len_), offset(offset_),
+          index(index_) {}
+
     friend std::ostream &operator<<(std::ostream &os, const ColMeta &col) {
         return os << col.tab_name << ' ' << col.name << ' ' << col.type << ' ' << col.len << ' ' << col.offset << ' '
                   << col.index;

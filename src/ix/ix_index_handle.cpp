@@ -145,17 +145,9 @@ void IxIndexHandle::insert_entry(const uint8_t *key, const Rid &rid) {
         if (node.hdr->parent == IX_NO_PAGE) {
             // If current page is root node, allocate new root
             IxNodeHandle root = create_node();
-            *root.hdr = {
-                .next_free = IX_NO_PAGE,
-                .parent = IX_NO_PAGE,
-                .num_key = 0,
-                .num_child = 0,
-                .is_leaf = false,
-                .prev_leaf = IX_NO_PAGE,
-                .next_leaf = IX_NO_PAGE,
-            };
+            *root.hdr = IxPageHdr(IX_NO_PAGE, IX_NO_PAGE, 0, 0, false, IX_NO_PAGE, IX_NO_PAGE);
             // Insert current node's key & rid
-            Rid curr_rid = {.page_no = node.page->id.page_no, .slot_no = -1};
+            Rid curr_rid(node.page->id.page_no, -1);
             root.insert_rid(0, curr_rid);
             root.insert_key(0, node.get_key(node.hdr->num_key - 1));
             // update current node's parent
@@ -165,15 +157,11 @@ void IxIndexHandle::insert_entry(const uint8_t *key, const Rid &rid) {
         }
         // Allocate brother node
         IxNodeHandle bro = create_node();
-        *bro.hdr = {
-            .next_free = IX_NO_PAGE,
-            .parent = node.hdr->parent, // They have the same parent
-            .num_key = 0,
-            .num_child = 0,
-            .is_leaf = node.hdr->is_leaf, // Brother node is leaf only if current node is leaf.
-            .prev_leaf = IX_NO_PAGE,
-            .next_leaf = IX_NO_PAGE,
-        };
+        *bro.hdr = IxPageHdr(IX_NO_PAGE,
+                             node.hdr->parent, // They have the same parent
+                             0, 0,
+                             node.hdr->is_leaf, // Brother node is leaf only if current node is leaf.
+                             IX_NO_PAGE, IX_NO_PAGE);
         if (bro.hdr->is_leaf) {
             // maintain brother node's leaf pointer
             bro.hdr->next_leaf = node.hdr->next_leaf;
@@ -206,7 +194,7 @@ void IxIndexHandle::insert_entry(const uint8_t *key, const Rid &rid) {
         int child_idx = parent.find_child(node);
         // Insert popup key into parent
         parent.insert_key(child_idx, popup_key);
-        Rid bro_rid = {.page_no = bro.page->id.page_no, .slot_no = -1};
+        Rid bro_rid(bro.page->id.page_no, -1);
         parent.insert_rid(child_idx + 1, bro_rid);
         // Update global last_leaf if needed
         if (hdr.last_leaf == node.page->id.page_no) {
@@ -372,7 +360,7 @@ Iid IxIndexHandle::lower_bound(const uint8_t *key) const {
     }
     // Now we come to a leaf node, we do a sequential search
     int key_idx = node.lower_bound(key);
-    Iid iid{.page_no = node.page->id.page_no, .slot_no = key_idx};
+    Iid iid(node.page->id.page_no, key_idx);
     return iid;
 }
 
@@ -389,18 +377,18 @@ Iid IxIndexHandle::upper_bound(const uint8_t *key) const {
     }
     // Now we come to a leaf node, we do a sequential search
     int key_idx = node.upper_bound(key);
-    Iid iid = {.page_no = node.page->id.page_no, .slot_no = key_idx};
+    Iid iid(node.page->id.page_no, key_idx);
     return iid;
 }
 
 Iid IxIndexHandle::leaf_end() const {
     IxNodeHandle node = fetch_node(hdr.last_leaf);
-    Iid iid = {.page_no = hdr.last_leaf, .slot_no = node.hdr->num_key};
+    Iid iid(hdr.last_leaf, node.hdr->num_key);
     return iid;
 }
 
 Iid IxIndexHandle::leaf_begin() const {
-    Iid iid = {.page_no = hdr.first_leaf, .slot_no = 0};
+    Iid iid(hdr.first_leaf, 0);
     return iid;
 }
 

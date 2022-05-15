@@ -25,7 +25,7 @@ void check_equal(const RmFileHandle *fh, const std::unordered_map<Rid, std::stri
     }
     // Randomly get record
     for (int i = 0; i < 10; i++) {
-        Rid rid = {.page_no = 1 + rand() % (fh->hdr.num_pages - 1), .slot_no = rand() % fh->hdr.num_records_per_page};
+        Rid rid(1 + rand() % (fh->hdr.num_pages - 1), rand() % fh->hdr.num_records_per_page);
         bool mock_exist = mock.count(rid) > 0;
         bool rm_exist = fh->is_record(rid);
         EXPECT_EQ(rm_exist, mock_exist);
